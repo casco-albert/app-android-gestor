@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/editNroPedido"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="@string/numero_pedido"
+        android:textSize="12sp"/>
+
+    <TextView
+        android:id="@+id/editClienteId"
+        android:layout_width="0dp"
+        android:layout_weight="2"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:text="@string/id_cliente"/>
+
+    <TextView
+        android:id="@+id/editCantidad"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:letterSpacing="-0.03"
+        android:gravity="center"
+        android:text="@string/cantidad"/>
+
+    <TextView
+        android:id="@+id/editKilos"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:letterSpacing="-0.03"
+        android:gravity="center"
+        android:text="@string/kilos"/>
+
+    <TextView
+        android:id="@+id/editPrecio"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:letterSpacing="-0.03"
+        android:gravity="center"
+        android:text="@string/precio"/>
+
+    <CheckBox
+        android:id="@+id/checkEntrega"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:letterSpacing="-0.03"
+        android:gravity="center"
+        android:text=""/>
+    <ImageButton
+        android:id="@+id/btnEditar"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:letterSpacing="-0.03"
+        android:gravity="center"
+        android:src="@drawable/outline_contract_edit_24"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/btnEditar" />
+</LinearLayout>

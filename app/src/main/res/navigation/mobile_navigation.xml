@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/btnCliente">
+
+    <fragment
+        android:id="@+id/btnCliente"
+        android:name="com.example.myapplication.ui.transform.TransformFragment"
+        android:label="@string/btnCliente"
+        tools:layout="@layout/fragment_transform" />
+
+    <fragment
+        android:id="@+id/btnPedido"
+        android:name="com.example.myapplication.PedidosListFragment"
+        android:label="@string/btnPedido"
+        tools:layout="@layout/fragment_reflow" />
+
+    <fragment
+        android:id="@+id/btnCobro"
+        android:name="com.example.myapplication.ui.slideshow.SlideshowFragment"
+        android:label="@string/btnCobro"
+        tools:layout="@layout/fragment_slideshow" />
+
+    <fragment
+        android:id="@+id/btnConfig"
+        android:name="com.example.myapplication.ClienteFragment"
+        android:label="Nuevo Cliente"
+        tools:layout="@layout/fragment_cliente" />
+    <fragment
+        android:id="@+id/btnNuevoPedido"
+        android:name="com.example.myapplication.PedidosFragment"
+        android:label="Nuevo Pedido"
+        android:layout="@layout/fragment_pedidos" />
+    <fragment
+        android:id="@+id/btnNuevaCarga"
+        android:name="com.example.myapplication.CargaFragment"
+        android:label="Nueva Carga"
+        android:layout="@layout/fragment_carga" />
+
+</navigation>
