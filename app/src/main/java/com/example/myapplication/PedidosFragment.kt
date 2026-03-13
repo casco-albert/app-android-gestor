@@ -50,6 +50,7 @@ class PedidosFragment : Fragment() {
     }
 
     private fun insertarPedido() {
+
         val dbHelper = SQLite(requireContext())
         val baseDatos = dbHelper.writableDatabase
 
@@ -65,7 +66,21 @@ class PedidosFragment : Fragment() {
         val cantidad = cantidadTexto.toInt()
         val kilos = cantidad * 40
         val precio = kilos * clienteSeleccionado.preciokilo
+
         val idCarga = dbHelper.obtenerUltimaCargaId()
+
+        // 🔴 VALIDAR SI YA EXISTE PEDIDO EN ESA CARGA
+        if (dbHelper.existePedidoEnCarga(clienteSeleccionado.id, idCarga)) {
+
+            Toast.makeText(
+                requireContext(),
+                "Cliente ya tiene pedido en esta Carga",
+                Toast.LENGTH_LONG
+            ).show()
+
+            baseDatos.close()
+            return
+        }
 
         val registro = ContentValues().apply {
             put("nro_pedido", nroPedido)
@@ -86,6 +101,7 @@ class PedidosFragment : Fragment() {
             Toast.makeText(requireContext(), "Error al guardar pedido", Toast.LENGTH_SHORT).show()
         }
     }
+
 
     private fun limpiarCampos() {
         binding.editNroPedido.text.clear()

@@ -19,9 +19,9 @@
 
     <fragment
         android:id="@+id/btnCobro"
-        android:name="com.example.myapplication.ui.slideshow.SlideshowFragment"
-        android:label="@string/btnCobro"
-        tools:layout="@layout/fragment_slideshow" />
+        android:name="com.example.myapplication.DeudaClienteFragment"
+        android:label="Cobros"
+        tools:layout="@layout/fragment_deuda_cliente" />
 
     <fragment
         android:id="@+id/btnConfig"

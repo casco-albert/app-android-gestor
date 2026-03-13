@@ -8,7 +8,9 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import java.text.DecimalFormat
 import android.widget.CheckBox
+import android.widget.Toast
 import android.graphics.Color
+
 class PedidoAdapter(
     private var lista: MutableList<Pedido>,
     private val db: SQLite,
@@ -55,20 +57,40 @@ class PedidoAdapter(
         holder.txtKilo.visibility = View.GONE
         holder.txtPrecio.visibility = View.GONE
 
-        // Estado del checkbox
+        // Marcar el checkbox según estado del pedido
         holder.checkEntrega.isChecked = pedido.entrega == 1
 
-        // Si está entregado y no tiene deuda, generar deuda
-        if (pedido.entrega == 1 && !db.existeDeuda(pedido.id)) {
+        holder.checkEntrega.isChecked = pedido.entrega == 1
 
-            db.generarDeuda(pedido.id, pedido.precio)
+        holder.checkEntrega.setOnCheckedChangeListener { _, isChecked ->
 
-            holder.itemView.setBackgroundColor(Color.parseColor("#C8E6C9")) // verde claro
+            if (isChecked) {
+                // 1️⃣ Actualizar el pedido como entregado
+                db.marcarPedidoEntregado(pedido.id)
 
-        } else {
+                // 2️⃣ Generar deuda si no existe
+                if (!db.existeDeuda(pedido.id)) {
+                    val monto =  pedido.precio
+                    db.generarDeuda(pedido.id, monto)
 
-            holder.itemView.setBackgroundColor(Color.TRANSPARENT)
+                    Toast.makeText(
+                        holder.itemView.context,
+                        "Pedido Entragado y Deuda generada correctamente",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
 
+                // 4️⃣ Cambiar color del item para indicar que fue entregado
+                holder.itemView.setBackgroundColor(Color.parseColor("#C8E6C9")) // verde claro
+
+            } else {
+                // Si se desmarca, quitar color
+                holder.itemView.setBackgroundColor(Color.TRANSPARENT)
+            }
+
+            // 5️⃣ Opcional: actualizar la lista de deudas por cliente después de cualquier cambio
+            val listaDeudas = db.obtenerDeudaPorCliente()
+            // Aquí podrías actualizar un fragment, recyclerView o TextView que muestre la lista
         }
         holder.btnEditar.setOnClickListener {
             onEditarClick(pedido)
