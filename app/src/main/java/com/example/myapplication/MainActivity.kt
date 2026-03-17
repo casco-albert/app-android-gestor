@@ -86,6 +86,14 @@ class MainActivity : AppCompatActivity() {
                 navController.navigate(R.id.btnNuevoPedido)
                 true
             }
+            R.id.btnCobroCliente -> {
+                navController.navigate(R.id.btnCobroCliente)
+                true
+            }
+            R.id.btnHistorialCobro -> {
+                navController.navigate(R.id.btnHistorialCobro)
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }

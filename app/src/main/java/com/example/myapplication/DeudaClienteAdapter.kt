@@ -2,12 +2,9 @@ package com.example.myapplication
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import java.text.DecimalFormat
-import android.widget.CheckBox
-import android.graphics.Color
+
 class DeudaClienteAdapter(
     private val lista: MutableList<DeudaCliente>
 ) : RecyclerView.Adapter<DeudaClienteAdapter.ViewHolder>() {

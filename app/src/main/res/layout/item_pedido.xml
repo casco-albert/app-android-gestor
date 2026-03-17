@@ -4,68 +4,80 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="8dp">
+    android:padding="6dp"
+    android:gravity="center_vertical"
+    android:background="?android:attr/selectableItemBackground">
 
+    <!-- Nro Pedido -->
     <TextView
         android:id="@+id/editNroPedido"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:text="@string/numero_pedido"
-        android:textSize="12sp"/>
+        android:gravity="center"
+        android:textSize="12sp"
+        android:singleLine="true"
+        android:ellipsize="end"/>
 
+    <!-- Cliente -->
     <TextView
         android:id="@+id/editClienteId"
         android:layout_width="0dp"
-        android:layout_weight="2"
         android:layout_height="wrap_content"
+        android:layout_weight="2"
+        android:gravity="start|center_vertical"
         android:textSize="12sp"
-        android:text="@string/id_cliente"/>
+        android:singleLine="true"
+        android:ellipsize="end"/>
 
+    <!-- Cantidad -->
     <TextView
         android:id="@+id/editCantidad"
         android:layout_width="0dp"
-        android:layout_weight="1"
         android:layout_height="wrap_content"
-        android:textSize="12sp"
-        android:letterSpacing="-0.03"
+        android:layout_weight="1"
         android:gravity="center"
-        android:text="@string/cantidad"/>
+        android:textSize="14sp"
+        android:textStyle="bold"/>
 
+    <!-- Kg -->
     <TextView
         android:id="@+id/editKilos"
         android:layout_width="0dp"
-        android:layout_weight="1"
         android:layout_height="wrap_content"
-        android:textSize="12sp"
-        android:letterSpacing="-0.03"
+        android:layout_weight="1"
         android:gravity="center"
-        android:text="@string/kilos"/>
+        android:textSize="12sp"/>
 
+    <!-- Total -->
     <TextView
         android:id="@+id/editPrecio"
         android:layout_width="0dp"
-        android:layout_weight="1"
         android:layout_height="wrap_content"
-        android:textSize="12sp"
-        android:letterSpacing="-0.03"
+        android:layout_weight="1"
         android:gravity="center"
-        android:text="@string/precio"/>
+        android:textSize="12sp"
+        android:textStyle="bold"/>
 
-    <CheckBox
-        android:id="@+id/checkEntrega"
+    <!-- CheckBox + Edit Button -->
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:letterSpacing="-0.03"
-        android:gravity="center"
-        android:text=""/>
-    <ImageButton
-        android:id="@+id/btnEditar"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:letterSpacing="-0.03"
-        android:gravity="center"
-        android:src="@drawable/outline_contract_edit_24"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/btnEditar" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <CheckBox
+            android:id="@+id/check"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <ImageButton
+            android:id="@+id/btnEditar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/outline_contract_edit_24"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Editar"/>
+    </LinearLayout>
+
 </LinearLayout>

@@ -38,5 +38,14 @@
         android:name="com.example.myapplication.CargaFragment"
         android:label="Nueva Carga"
         android:layout="@layout/fragment_carga" />
-
+    <fragment
+        android:id="@+id/btnCobroCliente"
+        android:name="com.example.myapplication.CobroClienteRecyclerFragment"
+        android:label="Nueva Cobranza"
+        android:layout="@layout/fragment_cobro_cliente_recyclerview" />
+    <fragment
+        android:id="@+id/btnHistorialCobro"
+        android:name="com.example.myapplication.HistorialCobrosFragment"
+        android:label="Historial de Cobranza"
+        android:layout="@layout/fragment_historial_cobros" />
 </navigation>

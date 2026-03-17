@@ -24,7 +24,7 @@ class PedidoAdapter(
         val txtCantidad: TextView = view.findViewById(R.id.editCantidad)
         val txtKilo: TextView = view.findViewById(R.id.editKilos)
         val txtPrecio: TextView = view.findViewById(R.id.editPrecio)
-        val checkEntrega: CheckBox = view.findViewById(R.id.checkEntrega)
+        val checkEntrega: CheckBox = view.findViewById(R.id.check)
         val btnEditar: ImageButton = view.findViewById(R.id.btnEditar)
     }
 
@@ -47,7 +47,7 @@ class PedidoAdapter(
             pedido.cantidad,
             formato.format(pedido.kilos),
             formato.format(pedido.precio),
-            if (pedido.entrega == 1) "OK" else ""
+            if (pedido.entrega == 1) "" else ""
         )
 
         holder.txtNro.text = fila
@@ -57,40 +57,41 @@ class PedidoAdapter(
         holder.txtKilo.visibility = View.GONE
         holder.txtPrecio.visibility = View.GONE
 
-        // Marcar el checkbox según estado del pedido
         holder.checkEntrega.isChecked = pedido.entrega == 1
 
-        holder.checkEntrega.isChecked = pedido.entrega == 1
-
+        if (pedido.entrega == 1) {
+            holder.btnEditar.isEnabled = false
+            holder.btnEditar.alpha = 0.3f
+            holder.itemView.setBackgroundColor(Color.parseColor("#C8E6C9"))
+        } else {
+            holder.btnEditar.isEnabled = true
+            holder.btnEditar.alpha = 1f
+            holder.itemView.setBackgroundColor(Color.TRANSPARENT)
+        }
         holder.checkEntrega.setOnCheckedChangeListener { _, isChecked ->
 
             if (isChecked) {
-                // 1️⃣ Actualizar el pedido como entregado
                 db.marcarPedidoEntregado(pedido.id)
 
-                // 2️⃣ Generar deuda si no existe
-                if (!db.existeDeuda(pedido.id)) {
-                    val monto =  pedido.precio
-                    db.generarDeuda(pedido.id, monto)
+                val monto = pedido.precio
 
-                    Toast.makeText(
-                        holder.itemView.context,
-                        "Pedido Entragado y Deuda generada correctamente",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+                db.generarDeuda(
+                    pedido.id,
+                    pedido.cli_id,
+                    monto
+                )
 
-                // 4️⃣ Cambiar color del item para indicar que fue entregado
-                holder.itemView.setBackgroundColor(Color.parseColor("#C8E6C9")) // verde claro
-
+                Toast.makeText(
+                    holder.itemView.context,
+                    "Pedido entregado y deuda generada correctamente",
+                    Toast.LENGTH_SHORT
+                ).show()
+                holder.itemView.setBackgroundColor(Color.parseColor("#C8E6C9"))
             } else {
-                // Si se desmarca, quitar color
                 holder.itemView.setBackgroundColor(Color.TRANSPARENT)
             }
 
-            // 5️⃣ Opcional: actualizar la lista de deudas por cliente después de cualquier cambio
             val listaDeudas = db.obtenerDeudaPorCliente()
-            // Aquí podrías actualizar un fragment, recyclerView o TextView que muestre la lista
         }
         holder.btnEditar.setOnClickListener {
             onEditarClick(pedido)

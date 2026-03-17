@@ -12,4 +12,12 @@
         android:id="@+id/btnNuevoPedido"
         android:icon="@drawable/outline_add_notes_24"
         android:title="@string/btnNuevoPedido" />
+    <item
+        android:id="@+id/btnCobroCliente"
+        android:icon="@drawable/rounded_account_balance_wallet_24"
+        android:title="@string/btnCobroCliente" />
+    <item
+        android:id="@+id/btnHistorialCobro"
+        android:icon="@drawable/rounded_account_balance_wallet_24"
+        android:title="@string/btnHistorialCobro" />
 </menu>

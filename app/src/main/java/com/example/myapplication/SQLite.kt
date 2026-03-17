@@ -4,12 +4,14 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.icu.text.SimpleDateFormat
 import java.text.DecimalFormat
+import java.util.Date
 import java.util.Locale
 import kotlin.compareTo
 
 class SQLite(context: Context) :
-    SQLiteOpenHelper(context, "distripar", null, 5) {
+    SQLiteOpenHelper(context, "distripar", null, 6) {
 
     override fun onCreate(db: SQLiteDatabase) {
 
@@ -58,6 +60,7 @@ class SQLite(context: Context) :
             """
             CREATE TABLE deuda (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                cli_id INTEGER,
                 id_pedido INTEGER,
                 deu_fecha TEXT,
                 monto REAL,
@@ -71,8 +74,10 @@ class SQLite(context: Context) :
             CREATE TABLE cobro (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 id_deuda INTEGER,
+                cli_id INTEGER,
                 cob_fecha TEXT,
-                monto REAL
+                monto REAL,
+                saldo REAL
             )
         """.trimIndent()
         )
@@ -163,12 +168,12 @@ class SQLite(context: Context) :
 
         val cursor = db.rawQuery(
             """
-        SELECT a.id, a.nro_pedido, b.nom, a.cantidad, a.kilos, a.precio, a.entrega
+        SELECT a.id, a.nro_pedido, a.cli_id, b.nom, a.cantidad, a.kilos, a.precio, a.entrega
         FROM pedidos a
         INNER JOIN clientes b ON a.cli_id = b.id
         WHERE a.id_carga = ?
         ORDER BY a.nro_pedido
-        """,
+        """.trimIndent(),
             arrayOf(idCarga.toString())
         )
 
@@ -176,25 +181,16 @@ class SQLite(context: Context) :
 
         if (cursor.moveToFirst()) {
             do {
-
-                val id = cursor.getInt(0)
-                val nroPedido = cursor.getString(1)
-                val clienteNombre = cursor.getString(2)
-                val cantidad = cursor.getInt(3)
-                val kilosRaw = cursor.getDouble(4)
-                val precioRaw = cursor.getDouble(5)
-                val entrega = cursor.getInt(6)
-
                 val pedido = Pedido(
-                    id,
-                    nroPedido,
-                    clienteNombre,
-                    cantidad,
-                    kilosRaw,
-                    precioRaw,
-                    entrega
+                    id = cursor.getInt(0),
+                    nroPedido = cursor.getString(1),
+                    cli_id = cursor.getInt(2),             // ✅ aquí
+                    cliente = cursor.getString(3),
+                    cantidad = cursor.getInt(4),
+                    kilos = cursor.getDouble(5),
+                    precio = cursor.getDouble(6),
+                    entrega = cursor.getInt(7)
                 )
-
                 lista.add(pedido)
 
             } while (cursor.moveToNext())
@@ -247,6 +243,42 @@ class SQLite(context: Context) :
 
         return lista
     }
+    fun obtenerPedidosPorCarga(idCarga: Int): MutableList<Pedido> {
+
+        val lista = mutableListOf<Pedido>()
+        val db = readableDatabase
+
+        val cursor = db.rawQuery(
+            """
+        SELECT a.id, a.nro_pedido, a.cli_id, b.nom, a.cantidad, a.kilos, a.precio, a.entrega
+        FROM pedidos a
+        INNER JOIN clientes b ON a.cli_id = b.id
+        WHERE a.id_carga = ?
+        ORDER BY a.nro_pedido
+        """,
+            arrayOf(idCarga.toString())
+        )
+
+        if (cursor.moveToFirst()) {
+            do {
+                val pedido = Pedido(
+                    id = cursor.getInt(0),
+                    nroPedido = cursor.getString(1),
+                    cli_id = cursor.getInt(2),
+                    cliente = cursor.getString(3),
+                    cantidad = cursor.getInt(4),
+                    kilos = cursor.getDouble(5),
+                    precio = cursor.getDouble(6),
+                    entrega = cursor.getInt(7)
+                )
+                lista.add(pedido)
+            } while (cursor.moveToNext())
+        }
+
+        cursor.close()
+        db.close()
+        return lista
+    }
     fun obtenerUltimaCargaId(): Int {
 
         val db = readableDatabase
@@ -281,65 +313,53 @@ class SQLite(context: Context) :
 
         db.close()
     }
-    fun generarDeuda(idPedido: Int, monto: Double) {
+    fun obtenerSaldoCliente(idCliente: Int): Double {
+
+        val db = readableDatabase
+        var saldo = 0.0
+
+        val cursor = db.rawQuery(
+            "SELECT totalDeuda FROM deuda WHERE cli_id = ? ORDER BY id DESC LIMIT 1",
+            arrayOf(idCliente.toString())
+        )
+
+        if (cursor.moveToFirst()) {
+            saldo = cursor.getDouble(0)
+        }
+
+        cursor.close()
+
+        return saldo
+    }
+    fun generarDeuda(idPedido: Int, idCliente: Int, monto: Double) {
+
         val db = writableDatabase
 
-        // 1️⃣ Verificar si el pedido fue entregado
-        val cursorPedido = db.rawQuery(
-            "SELECT entrega FROM pedidos WHERE id = ?",
-            arrayOf(idPedido.toString())
-        )
+        // Obtener saldo anterior del cliente, 0 si no tiene deuda
+        val saldoAnterior = obtenerSaldoCliente(idCliente)
 
-        var entregado = false
-        if (cursorPedido.moveToFirst()) {
-            entregado = cursorPedido.getInt(0) == 1
-        }
-        cursorPedido.close()
-
-        if (!entregado) {
-            // Si no está entregado, no generar deuda
-            db.close()
-            return
-        }
-
-        // 2️⃣ Verificar saldo anterior
-        var saldoAnterior = 0.0
-        val cursorDeuda = db.rawQuery(
-            "SELECT totalDeuda FROM deuda ORDER BY id DESC LIMIT 1",
-            null
-        )
-        if (cursorDeuda.moveToFirst()) {
-            saldoAnterior = cursorDeuda.getDouble(0)
-        }
-        cursorDeuda.close()
-
+        // Calcular total de la deuda sumando el monto actual
         val totalDeuda = saldoAnterior + monto
 
-        // 3️⃣ Fecha actual
-        val fechaActual = java.text.SimpleDateFormat(
-            "yyyy-MM-dd HH:mm:ss",
-            java.util.Locale.getDefault()
-        ).format(java.util.Date())
-
-        // 4️⃣ Insertar deuda
+        // Insertar registro en deuda
         val valores = ContentValues().apply {
+            put("cli_id", idCliente)
             put("id_pedido", idPedido)
-            put("deu_fecha", fechaActual)
+            put("deu_fecha", System.currentTimeMillis().toString())
             put("monto", monto)
             put("saldoAnterior", saldoAnterior)
             put("totalDeuda", totalDeuda)
         }
 
         db.insert("deuda", null, valores)
-        db.close()
     }
-    fun existeDeuda(idPedido: Int): Boolean {
+    fun existeDeuda(idCliente: Cliente): Boolean {
 
         val db = readableDatabase
 
         val cursor = db.rawQuery(
-            "SELECT id FROM deuda WHERE id_pedido = ?",
-            arrayOf(idPedido.toString())
+            "SELECT id FROM deuda WHERE id_Cliente = ?",
+            arrayOf(idCliente.toString())
         )
 
         val existe = cursor.count > 0
@@ -394,6 +414,121 @@ class SQLite(context: Context) :
 
         return lista
     }
+    fun obtenerClientesConDeuda(): MutableList<Cliente> {
+
+        val lista = mutableListOf<Cliente>()
+        val db = readableDatabase
+
+        val cursor = db.rawQuery(
+            """
+        SELECT DISTINCT c.id, c.nom
+        FROM clientes c
+        JOIN deuda d ON c.id = d.cli_id
+        WHERE d.totalDeuda > 0
+        """,
+            null
+        )
+
+        if (cursor.moveToFirst()) {
+            do {
+                val cliente = Cliente(
+                    id = cursor.getInt(0),
+                    nombre = cursor.getString(1),
+                    doc = "",
+                    direccion = "",
+                    telefono = "",
+                    precioKilo = 0.0
+                )
+                lista.add(cliente)
+            } while (cursor.moveToNext())
+        }
+
+        cursor.close()
+
+        return lista
+    }
+    fun obtenerHistorialCobros(clienteId: Int): List<HistorialCobro> {
+        val lista = mutableListOf<HistorialCobro>()
+        readableDatabase.use { db ->
+            val cursor = db.rawQuery("""
+            SELECT co.id, co.id_deuda, co.cli_id, c.nom, co.cob_fecha, co.monto, co.saldo
+            FROM cobro co
+            INNER JOIN clientes c ON co.cli_id = c.id
+            WHERE co.cli_id = ?
+            ORDER BY co.id DESC
+        """.trimIndent(), arrayOf(clienteId.toString()))
+
+            cursor.use { c ->
+                if (c.moveToFirst()) {
+                    do {
+                        val id = c.getInt(0)
+                        val idDeuda = c.getInt(1)
+                        val idCliente = c.getInt(2)
+                        val nombreCliente = c.getString(3)
+                        val fechaMillis = c.getLong(4)
+                        val monto = c.getDouble(5)
+                        val saldo = c.getDouble(6)
+
+                        val fechaFormateada = java.text.SimpleDateFormat(
+                            "dd/MM/yyyy", java.util.Locale("es", "PY")
+                        ).format(java.util.Date(fechaMillis))
+
+                        lista.add(HistorialCobro(id, idDeuda, idCliente, nombreCliente, fechaFormateada, monto, saldo))
+                    } while (c.moveToNext())
+                }
+            }
+        }
+        return lista
+    }
+    fun obtenerClienteIdPorDeuda(idDeuda: Int): Int {
+        val db = readableDatabase
+        var clienteId = 0
+
+        val cursor = db.rawQuery(
+            "SELECT cli_id FROM deuda WHERE id = ?",
+            arrayOf(idDeuda.toString())
+        )
+
+        cursor.use { c ->
+            if (c.moveToFirst()) {
+                clienteId = c.getInt(0)
+            }
+        }
+
+        return clienteId
+    }
+    fun obtenerHistorialCobrosTodos(): List<HistorialCobro> {
+        val lista = mutableListOf<HistorialCobro>()
+        readableDatabase.use { db ->
+            val cursor = db.rawQuery("""
+            SELECT co.id, co.id_deuda, co.cli_id, c.nom, co.cob_fecha, co.monto, co.saldo
+            FROM cobro co
+            INNER JOIN clientes c ON co.cli_id = c.id
+            ORDER BY co.cob_fecha DESC
+        """.trimIndent(), null)
+
+            cursor.use { c ->
+                if (c.moveToFirst()) {
+                    do {
+                        val id = c.getInt(0)
+                        val idDeuda = c.getInt(1)
+                        val idCliente = c.getInt(2)
+                        val nombreCliente = c.getString(3)
+                        val fechaMillis = c.getLong(4)
+                        val monto = c.getDouble(5)
+                        val saldo = c.getDouble(6)
+
+                        val fechaFormateada = java.text.SimpleDateFormat(
+                            "dd/MM/yyyy", java.util.Locale("es", "PY")
+                        ).format(java.util.Date(fechaMillis))
+
+                        lista.add(HistorialCobro(id, idDeuda, idCliente, nombreCliente, fechaFormateada, monto, saldo))
+                    } while (c.moveToNext())
+                }
+            }
+        }
+        return lista
+    }
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
 
         db.execSQL("DROP TABLE IF EXISTS cobro")
@@ -405,4 +540,5 @@ class SQLite(context: Context) :
         onCreate(db)
 
     }
+
 }

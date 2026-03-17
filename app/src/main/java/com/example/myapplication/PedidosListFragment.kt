@@ -6,8 +6,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Toast
+import android.widget.AdapterView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.myapplication.databinding.FragmentPedidosListBinding
@@ -17,6 +19,7 @@ class PedidosListFragment : Fragment() {
     private lateinit var binding: FragmentPedidosListBinding
     private lateinit var dbHelper: SQLite
     private lateinit var adapter: PedidoAdapter
+    private var listaCargas = listOf<Carga>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -25,16 +28,46 @@ class PedidosListFragment : Fragment() {
     ): View {
 
         binding = FragmentPedidosListBinding.inflate(inflater, container, false)
-
         dbHelper = SQLite(requireContext())
 
-        cargarPedidos()
+        // 1️⃣ Cargar spinner de cargas
+        cargarSpinnerCargas()
 
         return binding.root
     }
 
-    private fun cargarPedidos() {
-        val lista = dbHelper.obtenerPedidos()
+    private fun cargarSpinnerCargas() {
+        listaCargas = dbHelper.obtenerCargas() // Obtener todas las cargas
+
+        val adapterSpinner = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            listaCargas.map { it.descripcion } // mostrar solo la descripción
+        )
+        adapterSpinner.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spinnerCargas.adapter = adapterSpinner
+
+        // 2️⃣ Listener para filtrar pedidos según carga seleccionada
+        binding.spinnerCargas.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                val cargaSeleccionada = listaCargas[position]
+                cargarPedidos(cargaSeleccionada.id)
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>) {
+                // opcional: cargar todos los pedidos si no hay selección
+            }
+        }
+    }
+
+    // 3️⃣ Cargar pedidos filtrando por carga
+    private fun cargarPedidos(idCarga: Int) {
+        val lista = dbHelper.obtenerPedidosPorCarga(idCarga)
 
         adapter = PedidoAdapter(lista, dbHelper) { pedido ->
             mostrarDialogEditarCantidad(pedido)
@@ -72,7 +105,6 @@ class PedidosListFragment : Fragment() {
         )
 
         var clienteId = 0
-
         if (cursor.moveToFirst()) {
             clienteId = cursor.getInt(0)
         }
@@ -85,7 +117,6 @@ class PedidosListFragment : Fragment() {
         )
 
         var precioKilo = 0.0
-
         if (cursorCliente.moveToFirst()) {
             precioKilo = cursorCliente.getDouble(0)
         }
@@ -102,7 +133,9 @@ class PedidosListFragment : Fragment() {
         db.update("pedidos", values, "id=?", arrayOf(id.toString()))
         db.close()
 
-        cargarPedidos()
+        // Volver a cargar la misma carga seleccionada para actualizar la lista
+        val cargaActual = listaCargas.getOrNull(binding.spinnerCargas.selectedItemPosition)?.id
+        cargaActual?.let { cargarPedidos(it) }
 
         Toast.makeText(requireContext(), "Pedido actualizado correctamente!!", Toast.LENGTH_SHORT).show()
     }

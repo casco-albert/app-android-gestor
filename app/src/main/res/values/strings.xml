@@ -23,8 +23,11 @@
 
     <string name="guardar_pedido">Guardar Pedido</string>
     <string name="btnNuevoPedido">Nuevo Pedido</string>
+    <string name="btnCobroCliente">Nueva Cobranza</string>
     <string name="btnNuevaCarga">Nueva Carga</string>
-        //Pantalla Nuevo CARGA
+    <string name="btnHistorialCobro">Historial de Cobranza</string>
+
+    //Pantalla Nuevo CARGA
     <string name="guardar_carga">Guardar Carga</string>
     <string name="fecha">Fecha de CARGA</string>
     <string name="acantidad">Cantidad Total</string>
