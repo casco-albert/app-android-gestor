@@ -13,7 +13,7 @@
         android:layout_weight="2"
         android:layout_height="wrap_content"
         android:text="Cliente"
-        android:textSize="12sp"/>
+        android:textSize="10sp"/>
 
     <TextView
         android:id="@+id/deuFecha"
@@ -21,7 +21,7 @@
         android:layout_weight="2"
         android:layout_height="wrap_content"
         android:text="Fecha"
-        android:textSize="12sp"/>
+        android:textSize="10sp"/>
 
     <TextView
         android:id="@+id/deuMonto"
@@ -29,7 +29,7 @@
         android:layout_weight="1"
         android:layout_height="wrap_content"
         android:text="Monto"
-        android:textSize="12sp"/>
+        android:textSize="10sp"/>
 
     <TextView
         android:id="@+id/deuSaldoAnterior"
@@ -37,7 +37,7 @@
         android:layout_weight="1"
         android:layout_height="wrap_content"
         android:text="Saldo Ant."
-        android:textSize="12sp"/>
+        android:textSize="10sp"/>
 
     <TextView
         android:id="@+id/deuTotalDeuda"
@@ -45,5 +45,5 @@
         android:layout_weight="1"
         android:layout_height="wrap_content"
         android:text="Total"
-        android:textSize="12sp"/>
+        android:textSize="10sp"/>
 </LinearLayout>

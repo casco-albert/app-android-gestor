@@ -297,6 +297,24 @@ class SQLite(context: Context) :
 
         return idCarga
     }
+    fun obtenerUltimoNroPedidoPorCarga(idCarga: Int): Int {
+        val db = readableDatabase
+        var ultimoNumero = 0
+
+        val cursor = db.rawQuery(
+            "SELECT MAX(nro_pedido) as max_nro FROM pedidos WHERE id_carga = ?",
+            arrayOf(idCarga.toString())
+        )
+
+        if (cursor.moveToFirst()) {
+            ultimoNumero = cursor.getInt(cursor.getColumnIndexOrThrow("max_nro"))
+        }
+
+        cursor.close()
+        db.close()
+
+        return ultimoNumero
+    }
     fun marcarPedidoEntregado(idPedido: Int) {
         val db = writableDatabase
 
@@ -368,18 +386,15 @@ class SQLite(context: Context) :
 
         return existe
     }
-    fun obtenerDeudaPorCliente(): MutableList<String> {
+    fun obtenerDeudaPorCliente(): List<DeudaCliente> {
 
-        val lista = mutableListOf<String>()
+        val lista = mutableListOf<DeudaCliente>()
         val db = readableDatabase
-        val formato = DecimalFormat.getNumberInstance(Locale("es", "PY"))
 
-        lista.add("CLIENTE | ÚLTIMO MONTO | SALDO ANT | TOTAL DEUDA")
-
-        // Consulta para traer la última deuda de cada cliente
         val cursor = db.rawQuery(
             """
         SELECT c.nom,
+               d.deu_fecha,
                d.monto,
                d.saldoAnterior,
                d.totalDeuda
@@ -387,7 +402,6 @@ class SQLite(context: Context) :
         JOIN pedidos p ON d.id_pedido = p.id
         JOIN clientes c ON p.cli_id = c.id
         INNER JOIN (
-            -- traer la última deuda de cada cliente
             SELECT p.cli_id, MAX(d.id) AS ultima_deuda_id
             FROM deuda d
             JOIN pedidos p ON d.id_pedido = p.id
@@ -400,18 +414,27 @@ class SQLite(context: Context) :
 
         if (cursor.moveToFirst()) {
             do {
-                val cliente = cursor.getString(0)
-                val montoUltimo = formato.format(cursor.getDouble(1))
-                val saldoAnterior = formato.format(cursor.getDouble(2))
-                val totalDeuda = formato.format(cursor.getDouble(3))
 
-                lista.add("$cliente | $montoUltimo | $saldoAnterior | $totalDeuda")
+                val cliente = cursor.getString(0)
+                val fecha = cursor.getString(1)
+                val monto = cursor.getDouble(2)
+                val saldoAnterior = cursor.getDouble(3)
+                val totalDeuda = cursor.getDouble(4)
+
+                lista.add(
+                    DeudaCliente(
+                        cliente = cliente,
+                        deuFecha = fecha,
+                        monto = monto,
+                        saldoAnterior = saldoAnterior,
+                        totalDeuda = totalDeuda
+                    )
+                )
 
             } while (cursor.moveToNext())
         }
 
         cursor.close()
-
         return lista
     }
     fun obtenerClientesConDeuda(): MutableList<Cliente> {
@@ -529,6 +552,8 @@ class SQLite(context: Context) :
         }
         return lista
     }
+
+
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
 
         db.execSQL("DROP TABLE IF EXISTS cobro")

@@ -44,22 +44,4 @@
         android:gravity="end"
         android:singleLine="true"/>
 
-    <!-- Botón exportar a PDF -->
-    <ImageButton
-        android:id="@+id/btnExportPDF"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
-        android:src="@drawable/outline_assignment_returned_24"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Exportar PDF"/>
-
-    <!-- Botón exportar a Excel -->
-    <ImageButton
-        android:id="@+id/btnExportExcel"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
-        android:src="@drawable/outline_assignment_returned_24"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Exportar Excel"/>
-
 </LinearLayout>

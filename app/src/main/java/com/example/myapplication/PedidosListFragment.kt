@@ -6,13 +6,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
-import android.widget.EditText
-import android.widget.Toast
-import android.widget.AdapterView
+import android.widget.*
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.myapplication.databinding.FragmentPedidosListBinding
+import java.io.File
+import java.io.FileWriter
 
 class PedidosListFragment : Fragment() {
 
@@ -20,6 +19,9 @@ class PedidosListFragment : Fragment() {
     private lateinit var dbHelper: SQLite
     private lateinit var adapter: PedidoAdapter
     private var listaCargas = listOf<Carga>()
+
+    lateinit var txtTotalCantidad: TextView
+    lateinit var txtTotalKilos: TextView
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -30,42 +32,47 @@ class PedidosListFragment : Fragment() {
         binding = FragmentPedidosListBinding.inflate(inflater, container, false)
         dbHelper = SQLite(requireContext())
 
-        // 1️⃣ Cargar spinner de cargas
+        // Spinner
         cargarSpinnerCargas()
+
+        // 🔹 BOTÓN PDF
+        binding.btnPDF.setOnClickListener {
+            crearPDFPedidos()
+        }
+
+        // 🔹 BOTÓN CSV
+        binding.btnCSV.setOnClickListener {
+            exportarCSVPedidos()
+        }
+        txtTotalCantidad = binding.txtTotalCantidad
+        txtTotalKilos = binding.txtTotalKilos
 
         return binding.root
     }
 
+    // 🔹 SPINNER DE CARGAS
     private fun cargarSpinnerCargas() {
-        listaCargas = dbHelper.obtenerCargas() // Obtener todas las cargas
+        listaCargas = dbHelper.obtenerCargas()
 
         val adapterSpinner = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            listaCargas.map { it.descripcion } // mostrar solo la descripción
+            listaCargas.map { it.descripcion }
         )
         adapterSpinner.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spinnerCargas.adapter = adapterSpinner
 
-        // 2️⃣ Listener para filtrar pedidos según carga seleccionada
         binding.spinnerCargas.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                parent: AdapterView<*>,
-                view: View?,
-                position: Int,
-                id: Long
-            ) {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 val cargaSeleccionada = listaCargas[position]
                 cargarPedidos(cargaSeleccionada.id)
             }
 
-            override fun onNothingSelected(parent: AdapterView<*>) {
-                // opcional: cargar todos los pedidos si no hay selección
-            }
+            override fun onNothingSelected(parent: AdapterView<*>) {}
         }
     }
 
-    // 3️⃣ Cargar pedidos filtrando por carga
+    // 🔹 CARGAR PEDIDOS
     private fun cargarPedidos(idCarga: Int) {
         val lista = dbHelper.obtenerPedidosPorCarga(idCarga)
 
@@ -75,8 +82,14 @@ class PedidosListFragment : Fragment() {
 
         binding.recyclerPedidos.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerPedidos.adapter = adapter
+        adapter.ordenarPorNumero()
+
+        actualizarTotales(
+            lista)
+
     }
 
+    // 🔹 EDITAR CANTIDAD
     private fun mostrarDialogEditarCantidad(pedido: Pedido) {
         val editText = EditText(requireContext())
         editText.setText(pedido.cantidad.toString())
@@ -94,11 +107,23 @@ class PedidosListFragment : Fragment() {
             .show()
     }
 
+    // 🔹 ACTUALIZAR CANTIDAD
     private fun actualizarCantidad(id: Int, nuevaCantidad: Int) {
 
         val db = dbHelper.writableDatabase
 
-        // obtener el cliente del pedido
+        // 🔴 SI LA CANTIDAD ES 0 → ELIMINAR
+        if (nuevaCantidad == 0) {
+            db.delete("pedidos", "id=?", arrayOf(id.toString()))
+            db.close()
+
+            val cargaActual = listaCargas.getOrNull(binding.spinnerCargas.selectedItemPosition)?.id
+            cargaActual?.let { cargarPedidos(it) }
+
+            Toast.makeText(requireContext(), "Pedido eliminado", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val cursor = db.rawQuery(
             "SELECT cli_id FROM pedidos WHERE id=?",
             arrayOf(id.toString())
@@ -110,7 +135,6 @@ class PedidosListFragment : Fragment() {
         }
         cursor.close()
 
-        // obtener precio_kilo del cliente
         val cursorCliente = db.rawQuery(
             "SELECT preciokilo FROM clientes WHERE id=?",
             arrayOf(clienteId.toString())
@@ -133,10 +157,47 @@ class PedidosListFragment : Fragment() {
         db.update("pedidos", values, "id=?", arrayOf(id.toString()))
         db.close()
 
-        // Volver a cargar la misma carga seleccionada para actualizar la lista
         val cargaActual = listaCargas.getOrNull(binding.spinnerCargas.selectedItemPosition)?.id
         cargaActual?.let { cargarPedidos(it) }
 
-        Toast.makeText(requireContext(), "Pedido actualizado correctamente!!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(requireContext(), "Pedido actualizado correctamente", Toast.LENGTH_SHORT).show()
+    }
+
+    // 🔹 EXPORTAR PDF
+    private fun crearPDFPedidos() {
+
+        val posicion = binding.spinnerCargas.selectedItemPosition
+        if (posicion == AdapterView.INVALID_POSITION) {
+            Toast.makeText(requireContext(), "Seleccione una carga", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val idCarga = listaCargas[posicion].id
+        val lista = dbHelper.obtenerPedidosPorCarga(idCarga)
+
+        ExportPDFPedidos.crearPDFEnDescargas(requireContext(), lista)
+    }
+    // 🔹 EXPORTAR CSV
+    private fun exportarCSVPedidos() {
+
+        val posicion = binding.spinnerCargas.selectedItemPosition
+        if (posicion == AdapterView.INVALID_POSITION) {
+            Toast.makeText(requireContext(), "Seleccione una carga", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val idCarga = listaCargas[posicion].id
+        val lista = dbHelper.obtenerPedidosPorCarga(idCarga)
+
+
+        ExportCSVPedidos.crearCSVEnDescargas(requireContext(), lista)
+    }
+    private fun actualizarTotales(lista: List<Pedido>) {
+
+        val totalCantidad = lista.sumOf { it.cantidad }
+        val totalKilos = lista.sumOf { it.kilos }
+
+        txtTotalCantidad.text = "Cant: $totalCantidad"
+        txtTotalKilos.text = "Kg: %.1f".format(totalKilos)
     }
 }

@@ -1,37 +1,56 @@
 package com.example.myapplication
+
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.TextView
-import androidx.recyclerview.widget.RecyclerView
-
+import java.text.SimpleDateFormat
+import java.util.*
+import java.text.DecimalFormat
+import java.util.Locale
 class DeudaClienteAdapter(
-    private val lista: MutableList<DeudaCliente>
-) : RecyclerView.Adapter<DeudaClienteAdapter.ViewHolder>() {
+    context: Context,
+    private val lista: List<DeudaCliente>
+) : ArrayAdapter<DeudaCliente>(context, 0, lista) {
 
-    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val txtCliente: TextView = view.findViewById(R.id.deuCliente)
-        val txtFecha: TextView = view.findViewById(R.id.deuFecha)
-        val txtMonto: TextView = view.findViewById(R.id.deuMonto)
-        val txtSaldoAnterior: TextView = view.findViewById(R.id.deuSaldoAnterior)
-        val txtTotalDeuda: TextView = view.findViewById(R.id.deuTotalDeuda)
-    }
+    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context)
+        val view = convertView ?: LayoutInflater.from(context)
             .inflate(R.layout.item_deuda, parent, false)
-        return ViewHolder(view)
-    }
 
-    override fun getItemCount(): Int = lista.size
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val deuda = lista[position]
 
-        holder.txtCliente.text = deuda.cliente
-        holder.txtFecha.text = deuda.deuFecha
-        holder.txtMonto.text = deuda.monto.toString()
-        holder.txtSaldoAnterior.text = deuda.saldoAnterior.toString()
-        holder.txtTotalDeuda.text = deuda.totalDeuda.toString()
+        view.findViewById<TextView>(R.id.deuCliente).text = deuda.cliente
+        view.findViewById<TextView>(R.id.deuFecha).text = formatearFecha(deuda.deuFecha)
+        view.findViewById<TextView>(R.id.deuMonto).text = formatearNumero(deuda.monto)
+        view.findViewById<TextView>(R.id.deuSaldoAnterior).text = formatearNumero(deuda.saldoAnterior)
+        view.findViewById<TextView>(R.id.deuTotalDeuda).text = formatearNumero(deuda.totalDeuda)
+
+        return view
+    }
+    fun formatearNumero(numero: Double): String {
+        val formato = DecimalFormat("#,##0")
+        return formato.format(numero)
+    }
+    fun formatearFecha(fecha: String): String {
+        return try {
+            // 🔹 Si es timestamp (número)
+            if (fecha.all { it.isDigit() }) {
+                val timestamp = fecha.toLong()
+                val formato = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                formato.format(Date(timestamp))
+            } else {
+                // 🔹 Si viene como string tipo "2026-03-23"
+                val formatoEntrada = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val formatoSalida = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+
+                val date = formatoEntrada.parse(fecha)
+                formatoSalida.format(date!!)
+            }
+        } catch (e: Exception) {
+            fecha // si falla, devuelve lo que venga
+        }
     }
 }

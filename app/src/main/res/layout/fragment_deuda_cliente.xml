@@ -1,21 +1,115 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="8dp">
+    android:layout_height="match_parent">
 
-    <TextView
+    <!-- CONTENIDO PRINCIPAL -->
+    <LinearLayout
         android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <!-- TÍTULO -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Deudas por Cliente"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:paddingBottom="10dp"/>
+
+        <!-- ENCABEZADO -->
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="2dp"
+            android:background="#E0E0E0"
+            android:gravity="center_vertical">
+
+            <!-- Cliente -->
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="1.2"
+                android:text="Cliente"
+                android:textStyle="bold"
+                android:textSize="11sp"/>
+
+            <!-- Fecha -->
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:text="Fecha"
+                android:gravity="center"
+                android:textStyle="bold"
+                android:textSize="11sp"/>
+
+            <!-- Monto -->
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:text="Monto"
+                android:gravity="end"
+                android:textStyle="bold"
+                android:textSize="11sp"/>
+
+            <!-- Saldo -->
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:text="Saldo"
+                android:gravity="center_vertical|end"
+                android:textStyle="bold"
+                android:textSize="11sp"/>
+
+            <!-- Total -->
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:text="Total"
+                android:gravity="center_vertical|end"
+                android:textStyle="bold"
+                android:textSize="11sp"/>
+
+        </TableRow>
+
+        <!-- LISTA -->
+        <ListView
+            android:id="@+id/listDeudaCliente"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
+
+    </LinearLayout>
+
+    <!-- BOTONES FLOTANTES ABAJO DERECHA -->
+    <LinearLayout
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Deudas por Cliente"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:paddingBottom="10dp"/>
+        android:orientation="horizontal"
+        android:layout_gravity="bottom|end"
+        android:padding="16dp">
 
-    <ListView
-        android:id="@+id/listDeudaCliente"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
-</LinearLayout>
+        <ImageButton
+            android:id="@+id/btnCSVDeuda"
+            android:layout_width="55dp"
+            android:layout_height="55dp"
+            android:src="@drawable/csv"
+            android:scaleType="centerInside"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Exportar CSV"/>
+
+        <ImageButton
+            android:id="@+id/btnPDFDeuda"
+            android:layout_width="55dp"
+            android:layout_height="55dp"
+            android:layout_marginStart="10dp"
+            android:src="@drawable/pdf"
+            android:scaleType="centerInside"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Exportar PDF"/>
+
+    </LinearLayout>
+
+</FrameLayout>

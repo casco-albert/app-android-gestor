@@ -1,75 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
     android:background="#FFFFFF">
 
-    <!-- Título -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Historial de Cobros"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="12dp"/>
-
-    <!-- Encabezado tipo tabla -->
+    <!-- Contenido principal -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingBottom="4dp"
-        android:paddingTop="4dp"
-        android:background="#EEEEEE">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_above="@id/layoutBotones">
 
+        <!-- Título -->
         <TextView
-            android:layout_width="0dp"
-            android:layout_weight="2"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Cliente/Fecha"
+            android:text="Historial de Cobros"
+            android:textSize="20sp"
             android:textStyle="bold"
-            android:gravity="start"/>
+            android:layout_marginBottom="12dp"/>
 
-        <TextView
-            android:layout_width="0dp"
+        <!-- Encabezado -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="4dp"
+            android:background="#EEEEEE">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="2"
+                android:layout_height="wrap_content"
+                android:text="Cliente/Fecha"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Monto"
+                android:textStyle="bold"
+                android:gravity="end"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Deuda"
+                android:textStyle="bold"
+                android:gravity="end"/>
+        </LinearLayout>
+
+        <!-- RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvHistorialCobros"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
             android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:text="Monto"
-            android:textStyle="bold"
-            android:gravity="end"/>
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:text="Deuda"
-            android:textStyle="bold"
-            android:gravity="end"/>
-
-        <TextView
-            android:layout_width="40dp"
-            android:layout_height="wrap_content"
-            android:text="PDF"
-            android:textStyle="bold"
-            android:gravity="center"/>
-
-        <TextView
-            android:layout_width="40dp"
-            android:layout_height="wrap_content"
-            android:text="Excel"
-            android:textStyle="bold"
-            android:gravity="center"/>
+            android:paddingTop="4dp"/>
     </LinearLayout>
 
-    <!-- RecyclerView -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvHistorialCobros"
+    <!-- Botones abajo derecha -->
+    <LinearLayout
+        android:id="@+id/layoutBotones"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:paddingTop="4dp"/>
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:gravity="end"
+        android:padding="12dp"
+        android:orientation="horizontal">
 
-</LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnExportPDF"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@drawable/pdf"
+            android:scaleType="centerInside"
+            android:padding="10dp"
+            android:background="?attr/selectableItemBackgroundBorderless"/>
+
+        <ImageButton
+            android:id="@+id/btnExportExcel"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@drawable/csv"
+            android:scaleType="centerInside"
+            android:padding="10dp" android:background="?attr/selectableItemBackgroundBorderless"/>
+    </LinearLayout>
+
+</RelativeLayout>

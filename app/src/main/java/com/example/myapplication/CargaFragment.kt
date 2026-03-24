@@ -1,14 +1,13 @@
 package com.example.myapplication
 
+import android.app.DatePickerDialog
+import android.icu.util.Calendar
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.Fragment
-import com.example.myapplication.Carga
-import com.example.myapplication.R
-import com.example.myapplication.SQLite
 
 class CargaFragment : Fragment() {
 
@@ -29,40 +28,82 @@ class CargaFragment : Fragment() {
         val txtDescripcion = view.findViewById<EditText>(R.id.editDescripcion)
         val txtFecha = view.findViewById<EditText>(R.id.editFecha)
         val txtCantidad = view.findViewById<EditText>(R.id.editCantidadTotal)
-
         val btnGuardar = view.findViewById<Button>(R.id.btnGuardarCarga)
 
         listView = view.findViewById(R.id.listaCargas)
 
+        // 🔥 FECHA ACTUAL
+        val calendar = Calendar.getInstance()
+
+        fun setFechaActual() {
+            val d = calendar.get(Calendar.DAY_OF_MONTH)
+            val m = calendar.get(Calendar.MONTH)
+            val y = calendar.get(Calendar.YEAR)
+            txtFecha.setText("$d/${m + 1}/$y")
+        }
+
+        setFechaActual()
+
+        // 🔥 ABRIR CALENDARIO
+        txtFecha.setOnClickListener {
+
+            val partes = txtFecha.text.toString().split("/")
+
+            val d = partes.getOrNull(0)?.toIntOrNull() ?: calendar.get(Calendar.DAY_OF_MONTH)
+            val m = partes.getOrNull(1)?.toIntOrNull()?.minus(1) ?: calendar.get(Calendar.MONTH)
+            val y = partes.getOrNull(2)?.toIntOrNull() ?: calendar.get(Calendar.YEAR)
+
+            val datePicker = DatePickerDialog(requireContext(),
+                { _, selectedYear, selectedMonth, selectedDay ->
+
+                    val fechaSeleccionada =
+                        "$selectedDay/${selectedMonth + 1}/$selectedYear"
+
+                    txtFecha.setText(fechaSeleccionada)
+
+                }, y, m, d)
+
+            datePicker.show()
+        }
+
+        // 🔥 CARGAR LISTA
         cargarLista()
 
+        // 🔥 GUARDAR
         btnGuardar.setOnClickListener {
 
-            val descripcion = txtDescripcion.text.toString()
-            val fecha = txtFecha.text.toString()
-            val cantidad = txtCantidad.text.toString()
+            val descripcion = txtDescripcion.text.toString().trim()
+            val fecha = txtFecha.text.toString().trim()
+            val cantidadStr = txtCantidad.text.toString().trim()
 
-            if (descripcion.isEmpty() || fecha.isEmpty() || cantidad.isEmpty()) {
+            val cantidad = cantidadStr.toDoubleOrNull()
 
-                Toast.makeText(requireContext(), "Complete los campos", Toast.LENGTH_SHORT).show()
+            if (descripcion.isEmpty() || fecha.isEmpty() || cantidad == null) {
+
+                Toast.makeText(
+                    requireContext(),
+                    "Complete los campos correctamente",
+                    Toast.LENGTH_SHORT
+                ).show()
 
             } else {
 
-                db.insertarCarga(
-                    descripcion,
-                    fecha,
-                    cantidad.toDouble()
-                )
+                db.insertarCarga(descripcion, fecha, cantidad)
 
                 txtDescripcion.text.clear()
-                txtFecha.text.clear()
                 txtCantidad.text.clear()
+
+                // 🔥 NO BORRA FECHA → vuelve a actual
+                setFechaActual()
 
                 cargarLista()
 
-                Toast.makeText(requireContext(), "Carga guardada", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "Carga guardada",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
-
         }
 
         return view
@@ -72,15 +113,7 @@ class CargaFragment : Fragment() {
 
         lista = db.obtenerCargas()
 
-        val datos = lista.map {
-            "ID: ${it.id}  |  ${it.descripcion}  |  ${it.fecha}  |  ${it.cantidadTotal} kg"
-        }
-
-        val adapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_list_item_1,
-            datos
-        )
+        val adapter = CargaAdapter(requireContext(), lista)
 
         listView.adapter = adapter
     }

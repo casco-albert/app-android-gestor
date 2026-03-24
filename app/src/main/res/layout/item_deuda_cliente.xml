@@ -1,0 +1,55 @@
+<TableRow
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="2dp"
+    android:gravity="center_vertical">
+
+    <!-- Cliente -->
+    <TextView
+        android:id="@+id/deuCliente"
+        android:layout_width="0dp"
+        android:layout_weight="1.2"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textSize="11sp"
+        android:padding="2dp"/>
+
+    <!-- Fecha -->
+    <TextView
+        android:id="@+id/deuFecha"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:textSize="11sp"
+        android:padding="2dp"/>
+
+    <!-- Monto -->
+    <TextView
+        android:id="@+id/deuMonto"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:gravity="end"
+        android:textSize="11sp"
+        android:padding="2dp"/>
+
+    <!-- Saldo anterior -->
+    <TextView
+        android:id="@+id/deuSaldoAnterior"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:gravity="end"
+        android:textSize="11sp"
+        android:padding="2dp"/>
+
+    <!-- Total deuda -->
+    <TextView
+        android:id="@+id/deuTotalDeuda"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:gravity="end"
+        android:textStyle="bold"
+        android:textSize="11sp"
+        android:padding="2dp"/>
+
+</TableRow>

@@ -13,7 +13,7 @@
     <TextView
         android:id="@+id/tvNombreCliente"
         android:layout_width="0dp"
-        android:layout_weight="2"
+        android:layout_weight="1.5"
         android:layout_height="wrap_content"
         android:text="Cliente"
         android:textSize="16sp"
@@ -37,7 +37,7 @@
         android:layout_width="80dp"
         android:layout_height="wrap_content"
         android:inputType="numberDecimal"
-        android:hint="Monto"/>
+        android:hint="Ingrese Monto"/>
     <!-- Botón cobrar -->
     <ImageButton
         android:id="@+id/btnCobrar"

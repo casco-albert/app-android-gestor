@@ -24,7 +24,7 @@ class PedidosFragment : Fragment() {
         _binding = FragmentPedidosBinding.inflate(inflater, container, false)
 
         cargarClientes()
-
+        generarNumeroPedido()
         // Listener al campo cantidad
         binding.editCantidad.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -97,6 +97,7 @@ class PedidosFragment : Fragment() {
         if (resultado != -1L) {
             Toast.makeText(requireContext(), "Pedido guardado correctamente", Toast.LENGTH_SHORT).show()
             limpiarCampos()
+            generarNumeroPedido()
         } else {
             Toast.makeText(requireContext(), "Error al guardar pedido", Toast.LENGTH_SHORT).show()
         }
@@ -151,6 +152,16 @@ class PedidosFragment : Fragment() {
 
         binding.editKilos.setText(kilos.toString())
         binding.editPrecio.setText(precio.toString())
+    }
+    private fun generarNumeroPedido() {
+        val dbHelper = SQLite(requireContext())
+        val idCarga = dbHelper.obtenerUltimaCargaId()
+
+        val ultimoNro = dbHelper.obtenerUltimoNroPedidoPorCarga(idCarga)
+
+        val nuevoNro = ultimoNro + 1
+
+        binding.editNroPedido.setText(nuevoNro.toString())
     }
 
     override fun onDestroyView() {

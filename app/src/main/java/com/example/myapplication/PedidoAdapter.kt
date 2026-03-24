@@ -1,15 +1,15 @@
 package com.example.myapplication
 
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CheckBox
 import android.widget.ImageButton
 import android.widget.TextView
+import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 import java.text.DecimalFormat
-import android.widget.CheckBox
-import android.widget.Toast
-import android.graphics.Color
 
 class PedidoAdapter(
     private var lista: MutableList<Pedido>,
@@ -17,7 +17,9 @@ class PedidoAdapter(
     private val onEditarClick: (Pedido) -> Unit
 ) : RecyclerView.Adapter<PedidoAdapter.ViewHolder>() {
 
-    private val formato = DecimalFormat("#,###.0")
+    // Formato sin decimales y con miles
+    private val formato = DecimalFormat("#,###")
+
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val txtNro: TextView = view.findViewById(R.id.editNroPedido)
         val txtClienteId: TextView = view.findViewById(R.id.editClienteId)
@@ -40,45 +42,47 @@ class PedidoAdapter(
 
         val pedido = lista[position]
 
-        val fila = String.format(
-            "%-5s %-7s %-7s %-5s %-2s %-2s",
-            pedido.nroPedido,
-            pedido.cliente,
-            pedido.cantidad,
-            formato.format(pedido.kilos),
-            formato.format(pedido.precio),
-            if (pedido.entrega == 1) "" else ""
-        )
+        // Asignar datos a cada columna
+        holder.txtNro.text = pedido.nroPedido.toString()
+        holder.txtClienteId.text = pedido.cliente
+        holder.txtCantidad.text = pedido.cantidad.toString()
+        holder.txtKilo.text = formato.format(pedido.kilos)
+        holder.txtPrecio.text = formato.format(pedido.precio)
 
-        holder.txtNro.text = fila
-
-        holder.txtClienteId.visibility = View.GONE
-        holder.txtCantidad.visibility = View.GONE
-        holder.txtKilo.visibility = View.GONE
-        holder.txtPrecio.visibility = View.GONE
+        // Evitar problemas con el listener al reciclar vistas
+        holder.checkEntrega.setOnCheckedChangeListener(null)
 
         holder.checkEntrega.isChecked = pedido.entrega == 1
 
+        // Estado visual
         if (pedido.entrega == 1) {
             holder.btnEditar.isEnabled = false
+            holder.checkEntrega.isEnabled = false
             holder.btnEditar.alpha = 0.3f
             holder.itemView.setBackgroundColor(Color.parseColor("#C8E6C9"))
         } else {
             holder.btnEditar.isEnabled = true
+            holder.checkEntrega.isEnabled = true
             holder.btnEditar.alpha = 1f
-            holder.itemView.setBackgroundColor(Color.TRANSPARENT)
         }
+
+        // Alternar color de filas (zebra)
+        if (position % 2 == 0) {
+            holder.itemView.setBackgroundColor(Color.parseColor("#F5F5F5"))
+        } else {
+            holder.itemView.setBackgroundColor(Color.WHITE)
+        }
+
+        // Evento checkbox
         holder.checkEntrega.setOnCheckedChangeListener { _, isChecked ->
 
             if (isChecked) {
                 db.marcarPedidoEntregado(pedido.id)
 
-                val monto = pedido.precio
-
                 db.generarDeuda(
                     pedido.id,
                     pedido.cli_id,
-                    monto
+                    pedido.precio
                 )
 
                 Toast.makeText(
@@ -86,20 +90,35 @@ class PedidoAdapter(
                     "Pedido entregado y deuda generada correctamente",
                     Toast.LENGTH_SHORT
                 ).show()
+
                 holder.itemView.setBackgroundColor(Color.parseColor("#C8E6C9"))
+
             } else {
                 holder.itemView.setBackgroundColor(Color.TRANSPARENT)
             }
-
-            val listaDeudas = db.obtenerDeudaPorCliente()
         }
+
+        // Editar
         holder.btnEditar.setOnClickListener {
             onEditarClick(pedido)
         }
     }
-    // Método para actualizar la lista sin recrear el adapter
+
+    fun ordenarPorNumero() {
+        lista.sortBy { it.nroPedido.toInt() }
+        notifyDataSetChanged()
+    }
+
+    // 🔽 Orden descendente
+    fun ordenarPorNumeroDesc() {
+        lista.sortByDescending { it.nroPedido.toInt() }
+        notifyDataSetChanged()
+    }
+
+    // 🔄 Actualizar lista
     fun actualizarLista(nuevaLista: MutableList<Pedido>) {
         lista = nuevaLista
         notifyDataSetChanged()
     }
+
 }

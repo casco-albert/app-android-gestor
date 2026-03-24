@@ -3,21 +3,23 @@ package com.example.myapplication
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
 import android.widget.TextView
-import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 
 class HistorialCobroAdapter(
-    private val lista: List<HistorialCobro>
+    private var lista: MutableList<HistorialCobro>
 ) : RecyclerView.Adapter<HistorialCobroAdapter.ViewHolder>() {
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvFecha: TextView = view.findViewById(R.id.tvFechaCobro)
         val tvMonto: TextView = view.findViewById(R.id.tvMontoCobro)
         val tvDeuda: TextView = view.findViewById(R.id.tvSaldo)
-        val btnPDF: ImageButton = view.findViewById(R.id.btnExportPDF)
-        val btnExcel: ImageButton = view.findViewById(R.id.btnExportExcel)
+    }
+
+    fun actualizarLista(nuevaLista: List<HistorialCobro>) {
+        lista.clear()
+        lista.addAll(nuevaLista)
+        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -31,17 +33,17 @@ class HistorialCobroAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = lista[position]
 
-        // Mostrar nombre del cliente y fecha formateada
         holder.tvFecha.text = "${item.nombreCliente} - ${item.fecha}"
-        holder.tvMonto.text = item.monto.toString()
-        holder.tvDeuda.text = item.saldo.toString()
 
-        holder.btnPDF.setOnClickListener {
-            Toast.makeText(it.context, "Exportar PDF: ${item.id}", Toast.LENGTH_SHORT).show()
-        }
+        val formato = java.text.DecimalFormat("#,###")
+        holder.tvMonto.text = formato.format(item.monto)
+        holder.tvDeuda.text = formato.format(item.saldo)
 
-        holder.btnExcel.setOnClickListener {
-            Toast.makeText(it.context, "Exportar Excel: ${item.id}", Toast.LENGTH_SHORT).show()
+        // 🔴 Pintar saldo
+        if (item.saldo > 100000) {
+            holder.tvDeuda.setTextColor(android.graphics.Color.RED)
+        } else {
+            holder.tvDeuda.setTextColor(android.graphics.Color.BLACK)
         }
     }
 }
