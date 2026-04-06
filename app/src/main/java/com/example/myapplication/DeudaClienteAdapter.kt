@@ -1,6 +1,9 @@
 package com.example.myapplication
 
 import android.content.Context
+import android.graphics.Color
+import android.graphics.Typeface
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,7 +17,6 @@ class DeudaClienteAdapter(
     context: Context,
     private val lista: List<DeudaCliente>
 ) : ArrayAdapter<DeudaCliente>(context, 0, lista) {
-
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
 
         val view = convertView ?: LayoutInflater.from(context)
@@ -22,11 +24,56 @@ class DeudaClienteAdapter(
 
         val deuda = lista[position]
 
-        view.findViewById<TextView>(R.id.deuCliente).text = deuda.cliente
-        view.findViewById<TextView>(R.id.deuFecha).text = formatearFecha(deuda.deuFecha)
-        view.findViewById<TextView>(R.id.deuMonto).text = formatearNumero(deuda.monto)
-        view.findViewById<TextView>(R.id.deuSaldoAnterior).text = formatearNumero(deuda.saldoAnterior)
-        view.findViewById<TextView>(R.id.deuTotalDeuda).text = formatearNumero(deuda.totalDeuda)
+        val cliente = view.findViewById<TextView>(R.id.deuCliente)
+        val fecha = view.findViewById<TextView>(R.id.deuFecha)
+        val monto = view.findViewById<TextView>(R.id.deuMonto)
+        val saldoAnterior = view.findViewById<TextView>(R.id.deuSaldoAnterior)
+        val pago = view.findViewById<TextView>(R.id.deuPago)
+        val total = view.findViewById<TextView>(R.id.deuTotalDeuda)
+
+        // 🔥 DATOS
+        cliente.text = deuda.cliente
+        fecha.text = formatearFecha(deuda.deuFecha)
+        monto.text = formatearNumero(deuda.monto)
+        saldoAnterior.text = formatearNumero(deuda.saldoAnterior)
+        pago.text = formatearNumero(deuda.montoCobro)
+        total.text = formatearNumero(deuda.totalDeuda)
+
+        // 🔥 ALINEACIÓN TIPO TABLA (Excel)
+        cliente.gravity = Gravity.START
+        fecha.gravity = Gravity.CENTER
+        monto.gravity = Gravity.END
+        saldoAnterior.gravity = Gravity.END
+        pago.gravity = Gravity.END
+        total.gravity = Gravity.END
+
+        // 🔥 FUENTE MONOSPACE (mejor alineación numérica)
+        monto.typeface = Typeface.MONOSPACE
+        saldoAnterior.typeface = Typeface.MONOSPACE
+        pago.typeface = Typeface.MONOSPACE
+        total.typeface = Typeface.MONOSPACE
+
+        // 🔥 COLOR (opcional pro)
+        saldoAnterior.setTextColor(Color.parseColor("#D32F2F"))
+        pago.setTextColor(Color.parseColor("#2E7D32"))
+
+        // 🔥 COLOR DE FONDO SEGÚN SALDO
+        when {
+            deuda.saldoAnterior > 299000 -> {
+                view.setBackgroundColor(Color.parseColor("#FFCDD2")) // rojo suave
+            }
+            deuda.saldoAnterior == 0.0 -> {
+                view.setBackgroundColor(Color.parseColor("#E8F5E9")) // verde suave
+            }
+            else -> {
+                // efecto zebra (filas intercaladas)
+                if (position % 2 == 0) {
+                    view.setBackgroundColor(Color.parseColor("#FFFFFF"))
+                } else {
+                    view.setBackgroundColor(Color.parseColor("#F5F5F5"))
+                }            }
+        }
+
 
         return view
     }

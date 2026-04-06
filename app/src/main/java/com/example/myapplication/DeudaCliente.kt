@@ -5,5 +5,6 @@ data class DeudaCliente(
     val deuFecha: String,
     val monto: Double,
     val saldoAnterior: Double,
+    val montoCobro: Double,
     val totalDeuda: Double
 )

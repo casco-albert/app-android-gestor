@@ -31,10 +31,7 @@ object ExportCSVPedidos {
         try {
             val writer = FileWriter(file)
 
-            // Encabezado
-            writer.append("Nro,Cliente,Cantidad,Kilos,Total\n")
-
-            writer.append("Nro;Cliente;Cantidad;Kilos;Total\n")
+            writer.append("Nro;Cliente;Cantidad;Kilos;Total Monto\n")
 
             for (p in lista) {
                 writer.append(

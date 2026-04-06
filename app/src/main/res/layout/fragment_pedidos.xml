@@ -14,7 +14,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/numero_pedido"
-            android:inputType="text" />
+            android:inputType="text"
+            android:background="#009688"
+            android:textSize="20sp"
+            android:textColor="#FF0000"
+            android:textStyle="bold"/>
 
         <Spinner
             android:id="@+id/spinnerClientes"

@@ -43,7 +43,7 @@ class PedidoAdapter(
         val pedido = lista[position]
 
         // Asignar datos a cada columna
-        holder.txtNro.text = pedido.nroPedido.toString()
+        holder.txtNro.text = (position + 1).toString()
         holder.txtClienteId.text = pedido.cliente
         holder.txtCantidad.text = pedido.cantidad.toString()
         holder.txtKilo.text = formato.format(pedido.kilos)
@@ -54,7 +54,6 @@ class PedidoAdapter(
 
         holder.checkEntrega.isChecked = pedido.entrega == 1
 
-        // Estado visual
         if (pedido.entrega == 1) {
             holder.btnEditar.isEnabled = false
             holder.checkEntrega.isEnabled = false
@@ -64,15 +63,14 @@ class PedidoAdapter(
             holder.btnEditar.isEnabled = true
             holder.checkEntrega.isEnabled = true
             holder.btnEditar.alpha = 1f
-        }
 
-        // Alternar color de filas (zebra)
-        if (position % 2 == 0) {
-            holder.itemView.setBackgroundColor(Color.parseColor("#F5F5F5"))
-        } else {
-            holder.itemView.setBackgroundColor(Color.WHITE)
+            // Zebra SOLO si no está entregado
+            if (position % 2 == 0) {
+                holder.itemView.setBackgroundColor(Color.parseColor("#F5F5F5"))
+            } else {
+                holder.itemView.setBackgroundColor(Color.WHITE)
+            }
         }
-
         // Evento checkbox
         holder.checkEntrega.setOnCheckedChangeListener { _, isChecked ->
 
@@ -105,7 +103,9 @@ class PedidoAdapter(
     }
 
     fun ordenarPorNumero() {
-        lista.sortBy { it.nroPedido.toInt() }
+        lista.sortBy {
+            it.nroPedido.toDouble()
+        }
         notifyDataSetChanged()
     }
 
@@ -119,6 +119,11 @@ class PedidoAdapter(
     fun actualizarLista(nuevaLista: MutableList<Pedido>) {
         lista = nuevaLista
         notifyDataSetChanged()
+    }
+    fun eliminarItem(position: Int) {
+        lista.removeAt(position)
+        notifyItemRemoved(position)
+        notifyItemRangeChanged(position, lista.size) // 🔥 reenumera
     }
 
 }

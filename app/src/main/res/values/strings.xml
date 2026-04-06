@@ -23,6 +23,7 @@
 
     <string name="guardar_pedido">Guardar Pedido</string>
     <string name="btnNuevoPedido">Nuevo Pedido</string>
+    <string name="btnNuevaDeuda">Registrar Deuda</string>
     <string name="btnCobroCliente">Nueva Cobranza</string>
     <string name="btnNuevaCarga">Nueva Carga</string>
     <string name="btnHistorialCobro">Historial de Cobranza</string>

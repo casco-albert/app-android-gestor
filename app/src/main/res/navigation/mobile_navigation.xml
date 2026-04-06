@@ -9,7 +9,13 @@
         android:id="@+id/btnCliente"
         android:name="com.example.myapplication.ui.transform.TransformFragment"
         android:label="@string/btnCliente"
-        tools:layout="@layout/fragment_transform" />
+        tools:layout="@layout/fragment_transform">
+
+        <action
+            android:id="@+id/action_btnCliente_to_btnNuevoPedido"
+            app:destination="@id/btnNuevoPedido" />
+
+    </fragment>
 
     <fragment
         android:id="@+id/btnPedido"
@@ -20,7 +26,7 @@
     <fragment
         android:id="@+id/btnCobro"
         android:name="com.example.myapplication.DeudaClienteFragment"
-        android:label="Cobros"
+        android:label="@string/btnCobro"
         tools:layout="@layout/fragment_deuda_cliente" />
 
     <fragment

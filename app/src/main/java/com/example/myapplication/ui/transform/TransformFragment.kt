@@ -4,107 +4,191 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.app.AlertDialog
+import android.text.TextWatcher
+import android.text.Editable
+import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.myapplication.Cliente
-import com.example.myapplication.SQLite
+import com.example.myapplication.*
 import com.example.myapplication.databinding.FragmentTransformBinding
-import android.app.AlertDialog
-import android.widget.EditText
-import android.widget.ArrayAdapter
-import android.widget.Spinner
-import com.example.myapplication.ClienteItem
 import com.example.myapplication.R
+
 class TransformFragment : Fragment() {
 
     private var _binding: FragmentTransformBinding? = null
     private val binding get() = _binding!!
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    private lateinit var adapter: ClienteAdapter
+
+    // 🔥 TU MODELO REAL
+    private var listaOriginal: List<ClienteConPedido> = listOf()
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+
         _binding = FragmentTransformBinding.inflate(inflater, container, false)
-        val root = binding.root
 
-        val recyclerView = binding.recyclerviewTransform
-        recyclerView.layoutManager = LinearLayoutManager(requireContext())
-
-        // Creamos adapter primero
-        val adapter = ClienteAdapter(
+        adapter = ClienteAdapter(
             onEditar = { cliente ->
                 mostrarDialogEditar(cliente)
-                //Toast.makeText(null, "Cliente actualizado corectamente!!", Toast.LENGTH_SHORT).show()
             },
             onEliminar = { cliente ->
                 AlertDialog.Builder(requireContext())
                     .setTitle("Eliminar Cliente")
-                    .setMessage("¿Estás seguro que deseas eliminar a ${cliente.nombre}?")
+                    .setMessage("¿Eliminar a ${cliente.nombre}?")
                     .setPositiveButton("Sí") { dialog, _ ->
                         val dbHelper = SQLite(requireContext())
-                        dbHelper.eliminarCliente(cliente.id)  // eliminar de SQLite
-                        //cargarClientes(adapter)
+                        dbHelper.eliminarCliente(cliente.id)
+                        cargarClientes()
                         dialog.dismiss()
                     }
-                    .setNegativeButton("Cancelar") { dialog, _ ->
-                        dialog.dismiss()
-                    }
+                    .setNegativeButton("Cancelar", null)
                     .show()
+            },
+            onClick = { item ->
+                if (item.tienePedido) {
+                    mostrarDialogEditarPedido(
+                        item.cliente.id,
+                        item.cantidadPedidos
+                    )
+                } else {
+                    abrirFormularioPedido(item.cliente)
+                }
             }
         )
 
-        recyclerView.adapter = adapter
+        binding.recyclerviewTransform.layoutManager =
+            LinearLayoutManager(requireContext())
 
-        cargarClientes(adapter)
+        binding.recyclerviewTransform.adapter = adapter
 
-        return root
+        // 🔍 BUSCADOR
+        binding.editBuscarCliente.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                filtrar(s.toString())
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+
+        cargarClientes()
+
+        return binding.root
     }
 
-    private fun cargarClientes(adapter: ClienteAdapter) {
+    // 🔍 FILTRO CORRECTO
+    private fun filtrar(texto: String) {
+
+        val listaFiltrada = listaOriginal.filter {
+            it.cliente.nombre.contains(texto, ignoreCase = true)
+        }
+
+        adapter.submitList(listaFiltrada)
+    }
+
+    // 🚀 NAVIGATION
+    private fun abrirFormularioPedido(cliente: Cliente) {
+        val bundle = Bundle().apply {
+            putInt("cliente_id", cliente.id)
+            putString("cliente_nombre", cliente.nombre)
+        }
+
+        findNavController().navigate(
+            R.id.btnNuevoPedido,
+            bundle
+        )
+    }
+
+    // 🔥 CARGAR CLIENTES
+    private fun cargarClientes() {
+
         val dbHelper = SQLite(requireContext())
-        val lista: List<Cliente> = dbHelper.obtenerClientes()
-        adapter.submitList(lista.toList())
-    }
-    private fun mostrarDialogEditar(cliente: Cliente) {
-        val inflater = LayoutInflater.from(requireContext())
-        val dialogView = inflater.inflate(R.layout.dialog_editar_cliente, null)
+        val idCarga = dbHelper.obtenerUltimaCargaId()
 
+        val lista = dbHelper.obtenerClientesConPedidos(idCarga)
+
+        listaOriginal = lista
+        adapter.submitList(lista)
+    }
+
+    // ✏️ EDITAR CLIENTE
+    private fun mostrarDialogEditar(cliente: Cliente) {
+
+        val dialogView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.dialog_editar_cliente, null)
+
+        val inputRec = dialogView.findViewById<EditText>(R.id.editRec)
         val inputNombre = dialogView.findViewById<EditText>(R.id.editNombre)
         val inputPrecio = dialogView.findViewById<EditText>(R.id.editPrecio)
 
+        inputRec.setText(cliente.rec.toString())
         inputNombre.setText(cliente.nombre)
         inputPrecio.setText(cliente.precioKilo.toString())
 
         AlertDialog.Builder(requireContext())
             .setTitle("Editar Cliente")
             .setView(dialogView)
-            .setPositiveButton("Guardar") { dialogInterface, _ ->
-                val nuevoNombre = inputNombre.text.toString()
-                val nuevoPrecio = inputPrecio.text.toString().toDoubleOrNull() ?: cliente.precioKilo
+            .setPositiveButton("Guardar") { dialog, _ ->
 
                 val dbHelper = SQLite(requireContext())
-                dbHelper.editarCliente(cliente.id, nuevoNombre, nuevoPrecio)
 
-                // Refresca la lista en RecyclerView
-                val adapter = binding.recyclerviewTransform.adapter as ClienteAdapter
-                cargarClientes(adapter)
+                dbHelper.editarCliente(
+                    cliente.id,
+                    inputRec.text.toString().toDoubleOrNull() ?: cliente.rec,
+                    inputNombre.text.toString(),
+                    inputPrecio.text.toString().toDoubleOrNull() ?: cliente.precioKilo
+                )
 
-                dialogInterface.dismiss()
+                cargarClientes()
+                dialog.dismiss()
             }
-            .setNegativeButton("Cancelar") { dialogInterface, _ ->
-                dialogInterface.dismiss()
-            }
+            .setNegativeButton("Cancelar", null)
             .show()
     }
 
-    private fun cargarClientes() {
-        val dbHelper = SQLite(requireContext())
-        val clientes = dbHelper.obtenerClientes() // <-- crear este método en SQLite
-        val listaClientes = clientes.map { ClienteItem(it.id, it.nombre, it.precioKilo) }
+    // 🔄 EDITAR PEDIDO
+    private fun mostrarDialogEditarPedido(clienteId: Int, cantidadActual: Int) {
 
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, listaClientes)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        val spinnerClientes = view?.findViewById<Spinner>(R.id.spinnerClientes)
-        spinnerClientes?.adapter = adapter
+        val editText = EditText(requireContext())
+        editText.setText(cantidadActual.toString())
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Editar cantidad pedido")
+            .setView(editText)
+            .setPositiveButton("Actualizar") { _, _ ->
+
+                val nuevaCantidad = editText.text.toString().toIntOrNull() ?: return@setPositiveButton
+
+                val db = SQLite(requireContext())
+                val idCarga = db.obtenerUltimaCargaId()
+
+                db.actualizarCantidadPorCliente(clienteId, idCarga, nuevaCantidad)
+
+                Toast.makeText(requireContext(),
+                    "Pedido actualizado correctamente",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                cargarClientes()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
+
+    override fun onResume() {
+        super.onResume()
+        if (::adapter.isInitialized) {
+            cargarClientes()
+        }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null

@@ -9,71 +9,87 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="8dp">
+        android:padding="0dp">
 
         <!-- TÍTULO -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Deudas por Cliente"
+            android:text=" Deudas por Cargas con saldo Anterior de Cliente"
             android:textSize="14sp"
+            android:background="#8C0B0B"
             android:textStyle="bold"
-            android:paddingBottom="10dp"/>
+            android:textColor="#FFFFFF"
+            android:paddingBottom="0dp"/>
 
         <!-- ENCABEZADO -->
-        <TableRow
+        <TableLayout
+            xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="2dp"
-            android:background="#E0E0E0"
-            android:gravity="center_vertical">
+            android:stretchColumns="*"
+            android:padding="0dp">
 
-            <!-- Cliente -->
-            <TextView
-                android:layout_width="0dp"
-                android:layout_weight="1.2"
-                android:text="Cliente"
-                android:textStyle="bold"
-                android:textSize="11sp"/>
+            <!-- 🔹 ENCABEZADO -->
+            <TableRow
+                android:background="#EEEEEE"
+                android:padding="2dp">
 
-            <!-- Fecha -->
-            <TextView
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:text="Fecha"
-                android:gravity="center"
-                android:textStyle="bold"
-                android:textSize="11sp"/>
+                <TextView
+                    android:text="Cliente"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:textStyle="bold"
+                    android:gravity="start"
+                    android:textSize="11sp"/>
 
-            <!-- Monto -->
-            <TextView
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:text="Monto"
-                android:gravity="end"
-                android:textStyle="bold"
-                android:textSize="11sp"/>
+                <TextView
+                    android:text="Fecha"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2.3"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:textSize="11sp"/>
 
-            <!-- Saldo -->
-            <TextView
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:text="Saldo"
-                android:gravity="center_vertical|end"
-                android:textStyle="bold"
-                android:textSize="11sp"/>
+                <TextView
+                    android:text="Cant."
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.1"
+                    android:textStyle="bold"
+                    android:gravity="end"
+                    android:textSize="11sp"/>
 
-            <!-- Total -->
-            <TextView
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:text="Total"
-                android:gravity="center_vertical|end"
-                android:textStyle="bold"
-                android:textSize="11sp"/>
+                <TextView
+                    android:text="SalAnt."
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2.2"
+                    android:textStyle="bold"
+                    android:gravity="end"
+                    android:textSize="11sp"/>
 
-        </TableRow>
+                <TextView
+                    android:text="Pago"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2.2"
+                    android:textStyle="bold"
+                    android:gravity="end"
+                    android:textSize="11sp"/>
 
+                <TextView
+                    android:text="Total"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2.2"
+                    android:textStyle="bold"
+                    android:gravity="end"
+                    android:textSize="11sp"/>
+            </TableRow>
+        </TableLayout>
         <!-- LISTA -->
         <ListView
             android:id="@+id/listDeudaCliente"

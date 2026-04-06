@@ -46,9 +46,9 @@ object ExportPDFPedidos {
         // 🔹 Encabezado
         canvas.drawText("Nro", colNro, y, paintBold)
         canvas.drawText("Cliente", colCliente, y, paintBold)
-        canvas.drawText("Cant", colCant, y, paintBold)
-        canvas.drawText("Kg", colKg, y, paintBold)
-        canvas.drawText("Total", colTotal, y, paintBold)
+        canvas.drawText("Cant. Bolsas", colCant, y, paintBold)
+        canvas.drawText("Kilos", colKg, y, paintBold)
+        canvas.drawText("Total Monto", colTotal, y, paintBold)
 
         y += 15f
 

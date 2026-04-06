@@ -47,6 +47,7 @@ class ClienteCobroAdapter(
         holder.tvNombre.text = cliente.nombre
         holder.tvDeuda.text = formato.format(deudaActual)
 
+        formatoMilesPY(holder.etMonto)
         holder.btnCobrar.setOnClickListener {
 
             val montoStr = holder.etMonto.text.toString()
@@ -56,9 +57,13 @@ class ClienteCobroAdapter(
                 return@setOnClickListener
             }
 
-            val monto = montoStr.toDoubleOrNull()
+            val montoLimpio = montoStr
+                .replace(".", "")
+                .replace(",", ".")
 
-            if (monto == null || monto <= 0) {
+            val monto = montoLimpio.toDoubleOrNull()
+
+            if (monto == null) {
                 Toast.makeText(holder.itemView.context, "Monto inválido", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
@@ -131,5 +136,48 @@ class ClienteCobroAdapter(
 
         cursor.close()
         return idDeuda
+    }
+    private fun formatoMilesPY(editText: EditText) {
+
+        val formatter = DecimalFormat("#,###").apply {
+            decimalFormatSymbols = decimalFormatSymbols.apply {
+                groupingSeparator = '.'
+            }
+        }
+
+        var current = ""
+
+        editText.addTextChangedListener(object : android.text.TextWatcher {
+
+            override fun afterTextChanged(s: android.text.Editable?) {
+                if (s.toString() != current) {
+
+                    editText.removeTextChangedListener(this)
+
+                    val cleanString = s.toString().replace("[^\\d]".toRegex(), "")
+
+                    if (cleanString.isNotEmpty()) {
+                        val parsed = cleanString.toLong()
+
+                        val formatted = if (parsed >= 1000) {
+                            formatter.format(parsed)
+                        } else {
+                            parsed.toString()
+                        }
+
+                        current = formatted
+                        editText.setText(formatted)
+                        editText.setSelection(formatted.length)
+                    } else {
+                        current = ""
+                    }
+
+                    editText.addTextChangedListener(this)
+                }
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
     }
 }

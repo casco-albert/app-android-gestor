@@ -8,10 +8,13 @@
     android:padding="16dp">
 
     <EditText
-        android:id="@+id/txtDoc"
+        android:id="@+id/txtRec"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="Documento"
+        android:hint="Orden Recorrida"
+        android:inputType="numberDecimal"
+        android:layout_marginTop="12dp"
+
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
@@ -21,20 +24,22 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="Nombre"
-        app:layout_constraintTop_toBottomOf="@id/txtDoc"
+        android:layout_marginTop="12dp"
+
+        app:layout_constraintTop_toBottomOf="@id/txtRec"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp"/>
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <EditText
         android:id="@+id/txtDirec"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="Dirección"
+        android:layout_marginTop="12dp"
+
         app:layout_constraintTop_toBottomOf="@id/txtNom"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp"/>
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <EditText
         android:id="@+id/txtTelef"
@@ -42,10 +47,11 @@
         android:layout_height="wrap_content"
         android:hint="Teléfono"
         android:inputType="phone"
+        android:layout_marginTop="12dp"
+
         app:layout_constraintTop_toBottomOf="@id/txtDirec"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp"/>
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <EditText
         android:id="@+id/txtPreciokilo"
@@ -53,19 +59,21 @@
         android:layout_height="wrap_content"
         android:hint="Precio por kilo"
         android:inputType="numberDecimal"
+        android:layout_marginTop="12dp"
+
         app:layout_constraintTop_toBottomOf="@id/txtTelef"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp"/>
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <Button
         android:id="@+id/btnGuardar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Guardar"
+        android:layout_marginTop="20dp"
+
         app:layout_constraintTop_toBottomOf="@id/txtPreciokilo"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="20dp"/>
+        app:layout_constraintEnd_toEndOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

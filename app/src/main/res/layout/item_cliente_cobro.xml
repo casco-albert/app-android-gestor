@@ -34,10 +34,14 @@
         android:singleLine="true"/>
     <EditText
         android:id="@+id/etMontoCobro"
-        android:layout_width="80dp"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_weight="1.2"
         android:inputType="numberDecimal"
-        android:hint="Ingrese Monto"/>
+        android:hint="Monto"
+        android:gravity="end"
+        android:padding="6dp"
+        android:maxLines="1"/>
     <!-- Botón cobrar -->
     <ImageButton
         android:id="@+id/btnCobrar"

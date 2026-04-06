@@ -10,9 +10,11 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.myapplication.databinding.FragmentPedidosBinding
+import androidx.navigation.fragment.findNavController
 
 class PedidosFragment : Fragment() {
 
+    private var clienteIdSeleccionado: Int = -1
     private var _binding: FragmentPedidosBinding? = null
     private val binding get() = _binding!!
 
@@ -21,11 +23,16 @@ class PedidosFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+
         _binding = FragmentPedidosBinding.inflate(inflater, container, false)
 
-        cargarClientes()
+        // 🔥 RECIBIR CLIENTE DESDE CLICK
+        clienteIdSeleccionado = arguments?.getInt("cliente_id") ?: -1
+
         generarNumeroPedido()
-        // Listener al campo cantidad
+        cargarClientes() // 🔥 IMPORTANTE
+
+        // Listener cantidad
         binding.editCantidad.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -34,13 +41,20 @@ class PedidosFragment : Fragment() {
             }
         })
 
-        // Listener al cambio de cliente
-        binding.spinnerClientes.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>, view: View?, position: Int, id: Long) {
-                actualizarKilosYPrecio()
+        // Spinner change
+        binding.spinnerClientes.onItemSelectedListener =
+            object : android.widget.AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: android.widget.AdapterView<*>,
+                    view: View?,
+                    position: Int,
+                    id: Long
+                ) {
+                    actualizarKilosYPrecio()
+                }
+
+                override fun onNothingSelected(parent: android.widget.AdapterView<*>) {}
             }
-            override fun onNothingSelected(parent: android.widget.AdapterView<*>) {}
-        }
 
         binding.btnGuardarPedido.setOnClickListener {
             insertarPedido()
@@ -49,6 +63,48 @@ class PedidosFragment : Fragment() {
         return binding.root
     }
 
+    // 🔥 CARGAR CLIENTES + SELECCION AUTOMÁTICA
+    private fun cargarClientes() {
+
+        val dbHelper = SQLite(requireContext())
+        val clientes = dbHelper.obtenerClientes()
+
+        if (clientes.isEmpty()) {
+            Toast.makeText(requireContext(), "No hay clientes disponibles", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val listaClientes = mutableListOf<ClienteItem>()
+        listaClientes.add(ClienteItem(0, "Seleccionar cliente", 0.0))
+
+        clientes.forEach { cliente ->
+            listaClientes.add(
+                ClienteItem(cliente.id, cliente.nombre, cliente.precioKilo)
+            )
+        }
+
+        val adapter = android.widget.ArrayAdapter(
+            requireContext(),
+            R.layout.spinner_dropdown_item,
+            listaClientes
+        )
+
+        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
+        binding.spinnerClientes.adapter = adapter
+
+        // 🔥 AQUÍ ESTÁ LA MAGIA (SELECCION AUTOMÁTICA)
+        if (clienteIdSeleccionado != -1) {
+            val index = listaClientes.indexOfFirst {
+                it.id == clienteIdSeleccionado
+            }
+
+            if (index != -1) {
+                binding.spinnerClientes.setSelection(index)
+            }
+        }
+    }
+
+    // 🔥 INSERTAR PEDIDO
     private fun insertarPedido() {
 
         val dbHelper = SQLite(requireContext())
@@ -69,9 +125,7 @@ class PedidosFragment : Fragment() {
 
         val idCarga = dbHelper.obtenerUltimaCargaId()
 
-        // 🔴 VALIDAR SI YA EXISTE PEDIDO EN ESA CARGA
         if (dbHelper.existePedidoEnCarga(clienteSeleccionado.id, idCarga)) {
-
             Toast.makeText(
                 requireContext(),
                 "Cliente ya tiene pedido en esta Carga",
@@ -96,44 +150,17 @@ class PedidosFragment : Fragment() {
 
         if (resultado != -1L) {
             Toast.makeText(requireContext(), "Pedido guardado correctamente", Toast.LENGTH_SHORT).show()
-            limpiarCampos()
-            generarNumeroPedido()
+            findNavController().popBackStack()
         } else {
             Toast.makeText(requireContext(), "Error al guardar pedido", Toast.LENGTH_SHORT).show()
         }
     }
-
 
     private fun limpiarCampos() {
         binding.editNroPedido.text.clear()
         binding.editCantidad.text.clear()
         binding.editKilos.text.clear()
         binding.editPrecio.text.clear()
-    }
-
-    private fun cargarClientes() {
-        val dbHelper = SQLite(requireContext())
-        val clientes = dbHelper.obtenerClientes() // Devuelve List<Cliente>
-
-        if (clientes.isEmpty()) {
-            Toast.makeText(requireContext(), "No hay clientes disponibles", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val listaClientes = mutableListOf<ClienteItem>()
-        listaClientes.add(ClienteItem(0, "Seleccionar cliente", 0.0))
-
-        clientes.forEach { cliente ->
-            listaClientes.add(ClienteItem(cliente.id, cliente.nombre, cliente.precioKilo))
-        }
-
-        val adapter = android.widget.ArrayAdapter(
-            requireContext(),
-            R.layout.spinner_dropdown_item,
-            listaClientes
-        )
-        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
-        binding.spinnerClientes.adapter = adapter
     }
 
     private fun actualizarKilosYPrecio() {
@@ -153,6 +180,7 @@ class PedidosFragment : Fragment() {
         binding.editKilos.setText(kilos.toString())
         binding.editPrecio.setText(precio.toString())
     }
+
     private fun generarNumeroPedido() {
         val dbHelper = SQLite(requireContext())
         val idCarga = dbHelper.obtenerUltimaCargaId()
@@ -162,6 +190,7 @@ class PedidosFragment : Fragment() {
         val nuevoNro = ultimoNro + 1
 
         binding.editNroPedido.setText(nuevoNro.toString())
+        binding.editNroPedido.isEnabled = false
     }
 
     override fun onDestroyView() {

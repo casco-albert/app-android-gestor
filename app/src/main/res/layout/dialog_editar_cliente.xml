@@ -12,12 +12,17 @@
         android:hint="@string/nombre"
         android:inputType="textPersonName"
         android:autofillHints="name" />
-
+    <EditText
+        android:id="@+id/editRec"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/nombre"
+        android:inputType="numberDecimal"
+        android:autofillHints="Recorrida" />
     <EditText
         android:id="@+id/editPrecio"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/precio_kilo"
-        android:inputType="numberDecimal"
         android:layout_marginTop="12dp"/>
 </LinearLayout>

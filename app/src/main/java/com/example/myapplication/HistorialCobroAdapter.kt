@@ -16,10 +16,16 @@ class HistorialCobroAdapter(
         val tvDeuda: TextView = view.findViewById(R.id.tvSaldo)
     }
 
+    // 🔹 ACTUALIZAR LISTA (para filtro)
     fun actualizarLista(nuevaLista: List<HistorialCobro>) {
         lista.clear()
         lista.addAll(nuevaLista)
         notifyDataSetChanged()
+    }
+
+    // 🔥 NUEVO: obtener lista actual (filtrada)
+    fun obtenerLista(): List<HistorialCobro> {
+        return lista
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -40,10 +46,16 @@ class HistorialCobroAdapter(
         holder.tvDeuda.text = formato.format(item.saldo)
 
         // 🔴 Pintar saldo
-        if (item.saldo > 100000) {
-            holder.tvDeuda.setTextColor(android.graphics.Color.RED)
-        } else {
-            holder.tvDeuda.setTextColor(android.graphics.Color.BLACK)
+        when {
+            item.saldo > 100000 -> {
+                holder.tvDeuda.setTextColor(android.graphics.Color.RED)
+            }
+            item.saldo == 0.0 -> {
+                holder.tvDeuda.setTextColor(android.graphics.Color.parseColor("#2E7D32")) // verde suave
+            }
+            else -> {
+                holder.tvDeuda.setTextColor(android.graphics.Color.BLACK)
+            }
         }
     }
 }

@@ -1,49 +1,62 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<TableRow
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="8dp"
-    android:background="?android:attr/selectableItemBackground">
+    android:padding="6dp">
 
     <TextView
         android:id="@+id/deuCliente"
         android:layout_width="0dp"
-        android:layout_weight="2"
         android:layout_height="wrap_content"
-        android:text="Cliente"
-        android:textSize="10sp"/>
+        android:layout_weight="2"
+        android:gravity="start"
+        android:textSize="11sp"/>
 
     <TextView
         android:id="@+id/deuFecha"
         android:layout_width="0dp"
-        android:layout_weight="2"
         android:layout_height="wrap_content"
-        android:text="Fecha"
-        android:textSize="10sp"/>
+        android:layout_weight="2.3"
+        android:gravity="center"
+        android:textSize="11sp"/>
 
     <TextView
         android:id="@+id/deuMonto"
         android:layout_width="0dp"
-        android:layout_weight="1"
         android:layout_height="wrap_content"
-        android:text="Monto"
-        android:textSize="10sp"/>
+        android:layout_weight="1.1"
+        android:gravity="start"
+        android:fontFamily="monospace"
+        android:textSize="11sp"/>
 
     <TextView
         android:id="@+id/deuSaldoAnterior"
         android:layout_width="0dp"
-        android:layout_weight="1"
         android:layout_height="wrap_content"
-        android:text="Saldo Ant."
-        android:textSize="10sp"/>
+        android:layout_weight="2"
+        android:gravity="end"
+        android:textColor="#D32F2F"
+        android:fontFamily="monospace"
+        android:textSize="11sp"/>
+
+    <TextView
+        android:id="@+id/deuPago"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="2"
+        android:gravity="end"
+        android:textColor="#2E7D32"
+        android:fontFamily="monospace"
+        android:textSize="11sp"/>
 
     <TextView
         android:id="@+id/deuTotalDeuda"
         android:layout_width="0dp"
-        android:layout_weight="1"
         android:layout_height="wrap_content"
-        android:text="Total"
-        android:textSize="10sp"/>
-</LinearLayout>
+        android:layout_weight="2"
+        android:gravity="end"
+        android:textStyle="bold"
+        android:fontFamily="monospace"
+        android:textSize="11sp"/>
+
+</TableRow>

@@ -3,7 +3,7 @@ package com.example.myapplication
 
 data class Cliente(
     val id: Int,
-    val doc: String,
+    val rec: Double,
     val nombre: String,
     val direccion: String,
     val telefono: String,

@@ -12,7 +12,7 @@ import androidx.fragment.app.Fragment
 
 class ClienteFragment : Fragment() {
 
-    private lateinit var txtDoc: EditText
+    private lateinit var txtOrden: EditText
     private lateinit var txtNom: EditText
     private lateinit var txtDirec: EditText
     private lateinit var txtTelef: EditText
@@ -30,7 +30,7 @@ class ClienteFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        txtDoc = view.findViewById(R.id.txtDoc)
+        txtOrden = view.findViewById(R.id.txtRec)
         txtNom = view.findViewById(R.id.txtNom)
         txtDirec = view.findViewById(R.id.txtDirec)
         txtTelef = view.findViewById(R.id.txtTelef)
@@ -47,17 +47,17 @@ class ClienteFragment : Fragment() {
         val con = SQLite(requireContext())
         val baseadatos = con.writableDatabase
 
-        val doc = txtDoc.text.toString()
+        val rec = txtOrden.text.toString()
         val nom = txtNom.text.toString()
         val direc = txtDirec.text.toString()
         val telef = txtTelef.text.toString()
         val precioKilo = txtPreciokilo.text.toString()
 
-        if (doc.isNotEmpty() && nom.isNotEmpty()
+        if (rec.isNotEmpty() && nom.isNotEmpty()
             && telef.isNotEmpty() && precioKilo.isNotEmpty()) {
 
             val registro = ContentValues()
-            registro.put("doc", doc)
+            registro.put("rec", rec.toDouble())
             registro.put("nom", nom)
             registro.put("direc", direc)
             registro.put("telef", telef)
@@ -78,7 +78,7 @@ class ClienteFragment : Fragment() {
     }
 
     private fun limpiarCampos() {
-        txtDoc.text.clear()
+        txtOrden.text.clear()
         txtNom.text.clear()
         txtDirec.text.clear()
         txtTelef.text.clear()

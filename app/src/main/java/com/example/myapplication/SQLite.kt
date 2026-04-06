@@ -11,7 +11,7 @@ import java.util.Locale
 import kotlin.compareTo
 
 class SQLite(context: Context) :
-    SQLiteOpenHelper(context, "distripar", null, 6) {
+    SQLiteOpenHelper(context, "distripar", null, 7) {
 
     override fun onCreate(db: SQLiteDatabase) {
 
@@ -19,7 +19,7 @@ class SQLite(context: Context) :
             """
             CREATE TABLE clientes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                doc TEXT,
+                rec REAL,
                 nom TEXT,
                 direc TEXT,
                 telef TEXT,
@@ -66,6 +66,7 @@ class SQLite(context: Context) :
                 monto REAL,
                 saldoAnterior REAL,
                 totalDeuda REAL
+                
             )
         """.trimIndent()
         )
@@ -112,14 +113,14 @@ class SQLite(context: Context) :
         val lista = mutableListOf<Cliente>()
         val db = readableDatabase
 
-        val cursor = db.rawQuery("SELECT * FROM clientes", null)
+        val cursor = db.rawQuery("SELECT * FROM clientes order by rec asc", null)
 
         if (cursor.moveToFirst()) {
             do {
 
                 val cliente = Cliente(
                     id = cursor.getInt(cursor.getColumnIndexOrThrow("id")),
-                    doc = cursor.getString(cursor.getColumnIndexOrThrow("doc")),
+                    rec = cursor.getDouble(cursor.getColumnIndexOrThrow("rec")),
                     nombre = cursor.getString(cursor.getColumnIndexOrThrow("nom")),
                     direccion = cursor.getString(cursor.getColumnIndexOrThrow("direc")),
                     telefono = cursor.getString(cursor.getColumnIndexOrThrow("telef")),
@@ -137,11 +138,12 @@ class SQLite(context: Context) :
         return lista
     }
 
-    fun editarCliente(id: Int, nuevoNombre: String, nuevoPrecioKilo: Double) {
+    fun editarCliente(id: Int, nuevoRec: Double, nuevoNombre: String, nuevoPrecioKilo: Double) {
 
         val db = writableDatabase
 
         val values = ContentValues().apply {
+            put("rec", nuevoRec)
             put("nom", nuevoNombre)
             put("preciokilo", nuevoPrecioKilo)
         }
@@ -168,11 +170,11 @@ class SQLite(context: Context) :
 
         val cursor = db.rawQuery(
             """
-        SELECT a.id, a.nro_pedido, a.cli_id, b.nom, a.cantidad, a.kilos, a.precio, a.entrega
+        SELECT a.id, a.nro_pedido, a.cli_id, b.rec, b.nom, a.cantidad, a.kilos, a.precio, a.entrega
         FROM pedidos a
         INNER JOIN clientes b ON a.cli_id = b.id
         WHERE a.id_carga = ?
-        ORDER BY a.nro_pedido
+        ORDER BY b.rec
         """.trimIndent(),
             arrayOf(idCarga.toString())
         )
@@ -221,11 +223,11 @@ class SQLite(context: Context) :
         val lista = mutableListOf<Carga>()
         val db = readableDatabase
 
-        val cursor = db.rawQuery("SELECT * FROM carga ORDER BY fecha DESC", null)
+        val cursor = db.rawQuery("SELECT * FROM carga ORDER BY id desc" +
+                "", null)
 
         if (cursor.moveToFirst()) {
             do {
-
                 val carga = Carga(
                     cursor.getInt(cursor.getColumnIndexOrThrow("id")),
                     cursor.getString(cursor.getColumnIndexOrThrow("descripcion")),
@@ -250,11 +252,11 @@ class SQLite(context: Context) :
 
         val cursor = db.rawQuery(
             """
-        SELECT a.id, a.nro_pedido, a.cli_id, b.nom, a.cantidad, a.kilos, a.precio, a.entrega
+        SELECT a.id, b.rec, a.cli_id, b.nom, a.cantidad, a.kilos, a.precio, a.entrega
         FROM pedidos a
         INNER JOIN clientes b ON a.cli_id = b.id
         WHERE a.id_carga = ?
-        ORDER BY a.nro_pedido
+        ORDER BY b.rec ASC
         """,
             arrayOf(idCarga.toString())
         )
@@ -314,6 +316,100 @@ class SQLite(context: Context) :
         db.close()
 
         return ultimoNumero
+    }
+    fun obtenerClientesConPedidos(idCarga: Int): List<ClienteConPedido> {
+
+        val db = readableDatabase
+
+        val query = """
+        SELECT c.id,
+           c.rec,
+           c.nom,
+           c.direc,
+           c.telef,
+           c.preciokilo,
+           p.cantidad as cantidad
+        FROM clientes c
+        LEFT JOIN pedidos p 
+        ON c.id = p.cli_id AND p.id_carga = ?
+        GROUP BY c.rec
+        """
+
+        val cursor = db.rawQuery(query, arrayOf(idCarga.toString()))
+
+        val lista = mutableListOf<ClienteConPedido>()
+
+        while (cursor.moveToNext()) {
+
+            val cliente = Cliente(
+                id = cursor.getInt(0),
+                rec = cursor.getDouble(1),
+                nombre = cursor.getString(2),
+                direccion = cursor.getString(3),
+                telefono = cursor.getString(4),
+                precioKilo = cursor.getDouble(5)
+            )
+
+            val cantidad = cursor.getInt(6)
+
+            lista.add(
+                ClienteConPedido(
+                    cliente = cliente,
+                    tienePedido = cantidad > 0,
+                    cantidadPedidos = cantidad
+                )
+            )
+        }
+
+        cursor.close()
+        return lista
+    }
+    fun actualizarCantidadPorCliente(cliId: Int, idCarga: Int, nuevaCantidad: Int) {
+
+        val db = writableDatabase
+
+        // 🔴 SI ES 0 → ELIMINAR
+        if (nuevaCantidad == 0) {
+            db.delete(
+                "pedidos",
+                "cli_id=? AND id_carga=?",
+                arrayOf(cliId.toString(), idCarga.toString())
+            )
+            db.close()
+            return
+        }
+
+        // 🔍 OBTENER PRECIO KILO DEL CLIENTE
+        val cursor = db.rawQuery(
+            "SELECT preciokilo FROM clientes WHERE id=?",
+            arrayOf(cliId.toString())
+        )
+
+        var precioKilo = 0.0
+        if (cursor.moveToFirst()) {
+            precioKilo = cursor.getDouble(0)
+        }
+        cursor.close()
+
+        // 📦 CALCULAR
+        val kilos = nuevaCantidad * 40
+        val precio = kilos * precioKilo
+
+        // 🔄 ACTUALIZAR
+        val values = ContentValues().apply {
+            put("cantidad", nuevaCantidad)
+            put("kilos", kilos)
+            put("precio", precio)
+        }
+
+        db.update(
+            "pedidos",
+            values,
+            "cli_id=? AND id_carga=?",
+            arrayOf(cliId.toString(), idCarga.toString())
+        )
+
+        db.close()
     }
     fun marcarPedidoEntregado(idPedido: Int) {
         val db = writableDatabase
@@ -395,19 +491,28 @@ class SQLite(context: Context) :
             """
         SELECT c.nom,
                d.deu_fecha,
-               d.monto,
+               p.cantidad,
                d.saldoAnterior,
+               COALESCE(co.montoCobro, 0) AS montoCobro,
                d.totalDeuda
         FROM deuda d
         JOIN pedidos p ON d.id_pedido = p.id
         JOIN clientes c ON p.cli_id = c.id
+
+        LEFT JOIN (
+            SELECT id_deuda, SUM(monto) AS montoCobro
+            FROM cobro
+            GROUP BY id_deuda
+        ) co ON co.id_deuda = d.id
+
         INNER JOIN (
             SELECT p.cli_id, MAX(d.id) AS ultima_deuda_id
             FROM deuda d
             JOIN pedidos p ON d.id_pedido = p.id
             GROUP BY p.cli_id
         ) ult ON ult.ultima_deuda_id = d.id
-        ORDER BY c.nom
+
+        ORDER BY d.deu_fecha DESC
         """.trimIndent(),
             null
         )
@@ -417,16 +522,18 @@ class SQLite(context: Context) :
 
                 val cliente = cursor.getString(0)
                 val fecha = cursor.getString(1)
-                val monto = cursor.getDouble(2)
+                val monto = cursor.getInt(2)
                 val saldoAnterior = cursor.getDouble(3)
-                val totalDeuda = cursor.getDouble(4)
+                val montoCobro = cursor.getDouble(4) // 🔥 ahora correcto
+                val totalDeuda = cursor.getDouble(5)
 
                 lista.add(
                     DeudaCliente(
                         cliente = cliente,
                         deuFecha = fecha,
-                        monto = monto,
+                        monto = monto.toDouble(),
                         saldoAnterior = saldoAnterior,
+                        montoCobro = montoCobro,
                         totalDeuda = totalDeuda
                     )
                 )
@@ -435,6 +542,8 @@ class SQLite(context: Context) :
         }
 
         cursor.close()
+        db.close()
+
         return lista
     }
     fun obtenerClientesConDeuda(): MutableList<Cliente> {
@@ -457,7 +566,7 @@ class SQLite(context: Context) :
                 val cliente = Cliente(
                     id = cursor.getInt(0),
                     nombre = cursor.getString(1),
-                    doc = "",
+                    rec = 0.0,
                     direccion = "",
                     telefono = "",
                     precioKilo = 0.0
