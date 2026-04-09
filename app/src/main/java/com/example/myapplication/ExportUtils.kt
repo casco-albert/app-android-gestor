@@ -34,16 +34,16 @@ object ExportUtils {
             fecha
         }
     }
+    val symbols = DecimalFormatSymbols(Locale("es", "PY")).apply {
+        groupingSeparator = '.'
+        decimalSeparator = ','
+    }
 
     private fun formatearNumero(numero: Double): String {
-        val formato = DecimalFormat("#,##0")
+        val formato = DecimalFormat("#,###.0", symbols)
         return formato.format(numero)
     }
 
-    private fun formatearNumeroCSV(numero: Double): String {
-        val formato = DecimalFormat("#,##0", DecimalFormatSymbols(java.util.Locale("es", "PY")))
-        return formato.format(numero)
-    }
     fun exportarCSVDeuda(context: Context, lista: List<DeudaCliente>) {
 
         val fileName = "deudas_${System.currentTimeMillis()}.csv"
@@ -62,18 +62,19 @@ object ExportUtils {
 
                 val writer = OutputStreamWriter(output)
 
-                // Encabezado
-                writer.append("Cliente,Fecha,Monto,Saldo Anterior,Total\n")
+                // Encabezado CORREGIDO
+                writer.append("Cliente;Fecha;Cantidad;Saldo Anterior;Pagos;Total\n")
 
-                // Datos formateados
                 for (item in lista) {
-                    writer.append("${item.cliente},")
-                        .append("${formatearFecha(item.deuFecha)},")
-                        .append("${formatearNumeroCSV(item.monto)};")
-                        .append("${formatearNumeroCSV(item.saldoAnterior)};")
-                        .append("${formatearNumeroCSV(item.totalDeuda)}\n")
+                    writer.append(
+                        "${item.cliente};" +
+                                "${formatearFecha(item.deuFecha)};" +
+                                "${formatearNumero(item.monto)};" +
+                                "${formatearNumero(item.saldoAnterior)};" +
+                                "${formatearNumero(item.montoCobro)};" +
+                                "${formatearNumero(item.totalDeuda)}\n"
+                    )
                 }
-
                 writer.flush()
                 writer.close()
 
@@ -82,7 +83,6 @@ object ExportUtils {
             }
         }
     }
-
     // =========================
     // ✅ EXPORTAR PDF
     // =========================
@@ -118,32 +118,36 @@ object ExportUtils {
 
             y += 30
 
-            // Encabezado
+            // Encabezados CORREGIDOS
             paint.textSize = 10f
             paint.isFakeBoldText = true
 
             canvas.drawText("Cliente", 40f, y.toFloat(), paint)
             canvas.drawText("Fecha", 150f, y.toFloat(), paint)
-            canvas.drawText("Monto", 250f, y.toFloat(), paint)
-            canvas.drawText("Saldo", 350f, y.toFloat(), paint)
-            canvas.drawText("Total", 450f, y.toFloat(), paint)
+            canvas.drawText("Cantidad", 230f, y.toFloat(), paint)
+            canvas.drawText("Saldo Ant.", 300f, y.toFloat(), paint)
+            canvas.drawText("Pagos", 380f, y.toFloat(), paint)
+            canvas.drawText("Total", 460f, y.toFloat(), paint)
 
             y += 20
             paint.isFakeBoldText = false
 
-            // Datos formateados
+            // Datos
             for (item in lista) {
 
                 canvas.drawText(item.cliente, 40f, y.toFloat(), paint)
                 canvas.drawText(formatearFecha(item.deuFecha), 150f, y.toFloat(), paint)
-                canvas.drawText(formatearNumero(item.monto), 250f, y.toFloat(), paint)
-                canvas.drawText(formatearNumero(item.saldoAnterior), 350f, y.toFloat(), paint)
-                canvas.drawText(formatearNumero(item.totalDeuda), 450f, y.toFloat(), paint)
+                canvas.drawText(formatearNumero(item.monto), 230f, y.toFloat(), paint)
+                canvas.drawText(formatearNumero(item.saldoAnterior), 300f, y.toFloat(), paint)
+                canvas.drawText(formatearNumero(item.montoCobro), 380f, y.toFloat(), paint)
+                canvas.drawText(formatearNumero(item.totalDeuda), 460f, y.toFloat(), paint)
 
                 y += 20
 
-                // salto simple de página
-                if (y > 800) break
+                if (y > 800) {
+                    document.finishPage(page)
+                    break
+                }
             }
 
             document.finishPage(page)
@@ -154,9 +158,7 @@ object ExportUtils {
             Toast.makeText(context, "PDF guardado en Descargas", Toast.LENGTH_LONG).show()
             compartirArchivo(context, it)
         }
-    }
-
-    // =========================
+    } // =========================
     // ✅ COMPARTIR ARCHIVO
     // =========================
     private fun compartirArchivo(context: Context, uri: Uri) {

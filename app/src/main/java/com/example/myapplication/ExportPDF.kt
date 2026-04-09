@@ -40,13 +40,15 @@ object ExportPDF {
         val xFecha = 40f
         val xCliente = 120f
         val xMonto = 340f
+        val xPago = 340f
         val xSaldo = 450f
 
         var y = 50f
 
         canvas.drawText("Fecha", xFecha, y, paintBold)
         canvas.drawText("Cliente", xCliente, y, paintBold)
-        canvas.drawText("Monto", xMonto, y, paintBold)
+        canvas.drawText("Cantidad", xMonto, y, paintBold)
+        canvas.drawText("Cantidad", xMonto, y, paintBold)
         canvas.drawText("Saldo", xSaldo, y, paintBold)
 
         y += 15f

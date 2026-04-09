@@ -8,5 +8,5 @@ data class Pedido(
     var cantidad: Int,
     val kilos: Double,
     val precio: Double,
-    val entrega: Int
+    var entrega: Int
 )

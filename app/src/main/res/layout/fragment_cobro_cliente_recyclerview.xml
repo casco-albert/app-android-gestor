@@ -6,14 +6,29 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- TÍTULO -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Cobros de Clientes"
+        android:text="Registrar pagos de Clientes"
         android:textSize="20sp"
         android:textStyle="bold"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginBottom="12dp"/>
 
+    <!-- CAMPO BUSCAR -->
+    <EditText
+        android:id="@+id/etBuscarCliente"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Buscar..."
+        android:padding="10dp"
+        android:background="@android:drawable/edit_text"
+        android:layout_marginBottom="12dp"
+        android:inputType="text"
+        android:drawableStart="@android:drawable/ic_menu_search"
+        android:drawablePadding="8dp"/>
+
+    <!-- LISTA -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvClientes"
         android:layout_width="match_parent"

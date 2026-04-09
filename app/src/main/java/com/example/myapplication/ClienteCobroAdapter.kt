@@ -18,7 +18,10 @@ class ClienteCobroAdapter(
     clientes: List<Cliente>
 ) : RecyclerView.Adapter<ClienteCobroAdapter.ViewHolder>() {
 
-    // Solo clientes con deuda > 0
+    // 🔹 Lista original (NO se toca)
+    private val listaOriginal = clientes.toMutableList()
+
+    // 🔹 Lista visible (filtrada)
     private val clientesConDeuda = clientes
         .filter { dbHelper.obtenerSaldoCliente(it.id) > 0 }
         .toMutableList()
@@ -48,6 +51,7 @@ class ClienteCobroAdapter(
         holder.tvDeuda.text = formato.format(deudaActual)
 
         formatoMilesPY(holder.etMonto)
+
         holder.btnCobrar.setOnClickListener {
 
             val montoStr = holder.etMonto.text.toString()
@@ -57,11 +61,7 @@ class ClienteCobroAdapter(
                 return@setOnClickListener
             }
 
-            val montoLimpio = montoStr
-                .replace(".", "")
-                .replace(",", ".")
-
-            val monto = montoLimpio.toDoubleOrNull()
+            val monto = montoStr.replace(".", "").toDoubleOrNull()
 
             if (monto == null) {
                 Toast.makeText(holder.itemView.context, "Monto inválido", Toast.LENGTH_SHORT).show()
@@ -77,15 +77,8 @@ class ClienteCobroAdapter(
             val idDeuda = obtenerUltimaDeudaId(cliente.id)
             val idCliente = dbHelper.obtenerClienteIdPorDeuda(idDeuda)
 
-            if (idDeuda == 0) {
-                Toast.makeText(holder.itemView.context, "Error al obtener deuda", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            // 🔥 Calcular nuevo saldo
             val nuevoSaldo = deudaActual - monto
 
-            // ✅ Insertar cobro con saldo
             val valoresCobro = ContentValues().apply {
                 put("id_deuda", idDeuda)
                 put("cli_id", idCliente)
@@ -94,31 +87,39 @@ class ClienteCobroAdapter(
                 put("saldo", nuevoSaldo)
             }
 
-            val nuevoCobroId = db.insert("cobro", null, valoresCobro)
-            Log.d("ClienteCobroAdapter", "Cobro insertado con id=$nuevoCobroId")
+            db.insert("cobro", null, valoresCobro)
 
-            // ✅ Actualizar deuda
             val valoresDeuda = ContentValues().apply {
                 put("totalDeuda", nuevoSaldo)
             }
 
             db.update("deuda", valoresDeuda, "id = ?", arrayOf(idDeuda.toString()))
-
             db.close()
 
-            // UI
             holder.etMonto.text.clear()
             holder.tvDeuda.text = formato.format(nuevoSaldo)
 
-            Toast.makeText(holder.itemView.context, "Cobro registrado correctamente", Toast.LENGTH_SHORT).show()
+            Toast.makeText(holder.itemView.context, "Cobro registrado", Toast.LENGTH_SHORT).show()
 
-            // 🔥 Si ya no debe, eliminar de la lista
+            // 🔥 eliminar si ya no debe
             if (nuevoSaldo <= 0) {
                 clientesConDeuda.removeAt(position)
                 notifyItemRemoved(position)
-                notifyItemRangeChanged(position, clientesConDeuda.size)
             }
         }
+    }
+
+    // 🔎 FILTRO
+    fun filtrar(texto: String) {
+        clientesConDeuda.clear()
+
+        val filtrados = listaOriginal.filter {
+            dbHelper.obtenerSaldoCliente(it.id) > 0 &&
+                    it.nombre.contains(texto, ignoreCase = true)
+        }
+
+        clientesConDeuda.addAll(filtrados)
+        notifyDataSetChanged()
     }
 
     private fun obtenerUltimaDeudaId(clienteId: Int): Int {
@@ -137,8 +138,8 @@ class ClienteCobroAdapter(
         cursor.close()
         return idDeuda
     }
-    private fun formatoMilesPY(editText: EditText) {
 
+    private fun formatoMilesPY(editText: EditText) {
         val formatter = DecimalFormat("#,###").apply {
             decimalFormatSymbols = decimalFormatSymbols.apply {
                 groupingSeparator = '.'
@@ -148,7 +149,6 @@ class ClienteCobroAdapter(
         var current = ""
 
         editText.addTextChangedListener(object : android.text.TextWatcher {
-
             override fun afterTextChanged(s: android.text.Editable?) {
                 if (s.toString() != current) {
 
@@ -158,12 +158,7 @@ class ClienteCobroAdapter(
 
                     if (cleanString.isNotEmpty()) {
                         val parsed = cleanString.toLong()
-
-                        val formatted = if (parsed >= 1000) {
-                            formatter.format(parsed)
-                        } else {
-                            parsed.toString()
-                        }
+                        val formatted = if (parsed >= 1000) formatter.format(parsed) else parsed.toString()
 
                         current = formatted
                         editText.setText(formatted)

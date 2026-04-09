@@ -445,6 +445,19 @@ class SQLite(context: Context) :
 
         return saldo
     }
+    fun eliminarDeudaPorPedido(pedidoId: Int) {
+        val db = writableDatabase
+        db.delete("deuda", "id_pedido = ?", arrayOf(pedidoId.toString()))
+        db.close()
+    }
+
+    fun desmarcarPedidoEntregado(pedidoId: Int) {
+        val db = writableDatabase
+        val values = ContentValues()
+        values.put("entrega", 0)
+        db.update("pedidos", values, "id = ?", arrayOf(pedidoId.toString()))
+        db.close()
+    }
     fun generarDeuda(idPedido: Int, idCliente: Int, monto: Double) {
 
         val db = writableDatabase

@@ -4,6 +4,7 @@
     android:id="@+id/layout"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
+    android:padding="16dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -12,9 +13,13 @@
         android:id="@+id/editBuscarCliente"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Buscar cliente..."
+        android:hint="Buscar por nombre..."
         android:padding="10dp"
-        android:layout_margin="8dp"/>
+        android:background="@android:drawable/edit_text"
+        android:layout_marginBottom="12dp"
+        android:inputType="text"
+        android:drawableStart="@android:drawable/ic_menu_search"
+        android:drawablePadding="8dp"/>
 
     <!-- 📋 LISTA -->
     <androidx.recyclerview.widget.RecyclerView

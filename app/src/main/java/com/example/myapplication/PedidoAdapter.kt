@@ -42,57 +42,86 @@ class PedidoAdapter(
 
         val pedido = lista[position]
 
-        // Asignar datos a cada columna
+        // Asignar datos
         holder.txtNro.text = (position + 1).toString()
         holder.txtClienteId.text = pedido.cliente
         holder.txtCantidad.text = pedido.cantidad.toString()
         holder.txtKilo.text = formato.format(pedido.kilos)
         holder.txtPrecio.text = formato.format(pedido.precio)
 
-        // Evitar problemas con el listener al reciclar vistas
+        // 🔥 Evitar bug de reciclado
         holder.checkEntrega.setOnCheckedChangeListener(null)
 
         holder.checkEntrega.isChecked = pedido.entrega == 1
 
         if (pedido.entrega == 1) {
-            holder.btnEditar.isEnabled = false
-            holder.checkEntrega.isEnabled = false
+            //holder.btnEditar.isEnabled = false
             holder.btnEditar.alpha = 0.3f
+            holder.checkEntrega.isEnabled = true
+
             holder.itemView.setBackgroundColor(Color.parseColor("#C8E6C9"))
         } else {
             holder.btnEditar.isEnabled = true
-            holder.checkEntrega.isEnabled = true
             holder.btnEditar.alpha = 1f
+            holder.checkEntrega.isEnabled = true
 
-            // Zebra SOLO si no está entregado
+            // Zebra
             if (position % 2 == 0) {
                 holder.itemView.setBackgroundColor(Color.parseColor("#F5F5F5"))
             } else {
                 holder.itemView.setBackgroundColor(Color.WHITE)
             }
         }
-        // Evento checkbox
+
+        // ✅ Evento checkbox
         holder.checkEntrega.setOnCheckedChangeListener { _, isChecked ->
 
             if (isChecked) {
+
+                // Marcar entregado
                 db.marcarPedidoEntregado(pedido.id)
 
+                // Generar deuda
                 db.generarDeuda(
                     pedido.id,
                     pedido.cli_id,
                     pedido.precio
                 )
 
+                // Actualizar modelo
+                pedido.entrega = 1
+
                 Toast.makeText(
                     holder.itemView.context,
-                    "Pedido entregado y deuda generada correctamente",
+                    "Pedido entregado y deuda generada",
                     Toast.LENGTH_SHORT
                 ).show()
 
                 holder.itemView.setBackgroundColor(Color.parseColor("#C8E6C9"))
 
             } else {
-                holder.itemView.setBackgroundColor(Color.TRANSPARENT)
+
+                // Eliminar deuda
+                db.eliminarDeudaPorPedido(pedido.id)
+
+                // Desmarcar entregado
+                db.desmarcarPedidoEntregado(pedido.id)
+
+                // Actualizar modelo
+                pedido.entrega = 0
+
+                Toast.makeText(
+                    holder.itemView.context,
+                    "Deuda eliminada",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                // Restaurar zebra
+                if (position % 2 == 0) {
+                    holder.itemView.setBackgroundColor(Color.parseColor("#F5F5F5"))
+                } else {
+                    holder.itemView.setBackgroundColor(Color.WHITE)
+                }
             }
         }
 
@@ -109,21 +138,19 @@ class PedidoAdapter(
         notifyDataSetChanged()
     }
 
-    // 🔽 Orden descendente
     fun ordenarPorNumeroDesc() {
         lista.sortByDescending { it.nroPedido.toInt() }
         notifyDataSetChanged()
     }
 
-    // 🔄 Actualizar lista
     fun actualizarLista(nuevaLista: MutableList<Pedido>) {
         lista = nuevaLista
         notifyDataSetChanged()
     }
+
     fun eliminarItem(position: Int) {
         lista.removeAt(position)
         notifyItemRemoved(position)
-        notifyItemRangeChanged(position, lista.size) // 🔥 reenumera
+        notifyItemRangeChanged(position, lista.size)
     }
-
 }
