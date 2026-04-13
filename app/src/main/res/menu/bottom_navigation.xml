@@ -14,7 +14,7 @@
             android:title="@string/btnPedido" />
         <item
             android:id="@+id/btnCobro"
-            android:icon="@drawable/rounded_account_balance_wallet_24"
+            android:icon="@drawable/logo_cobro"
             android:title="@string/btnCobro" />
     </group>
 </menu>

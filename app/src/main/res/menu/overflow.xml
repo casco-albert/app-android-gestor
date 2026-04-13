@@ -6,7 +6,7 @@
         android:title="Nueva Carga"/>
     <item
         android:id="@+id/btnConfig"
-        android:icon="@drawable/ic_settings_black_24dp"
+        android:icon="@drawable/baseline_account_circle_24"
         android:title="@string/btnConfig" />
     <item
         android:id="@+id/btnNuevoPedido"
@@ -14,7 +14,7 @@
         android:title="@string/btnNuevoPedido" />
     <item
         android:id="@+id/btnCobroCliente"
-        android:icon="@drawable/rounded_account_balance_wallet_24"
+        android:icon="@drawable/logo_cobro"
         android:title="@string/btnCobroCliente" />
     <item
         android:id="@+id/btnHistorialCobro"
