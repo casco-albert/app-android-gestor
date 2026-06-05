@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         setupActionBarWithNavController(navController, appBarConfiguration)
+        binding.appBarMain.toolbar.navigationIcon?.setTint(getColor(android.R.color.black))
 
         // 🔥 Drawer
         binding.navView?.setupWithNavController(navController)
