@@ -1,14 +1,16 @@
 package com.example.myapplication
 
+import com.google.gson.annotations.SerializedName
+
 
 data class Cliente(
-    val id: Int,
+    val id: Int = 0,
     val rec: Double,
-    val nombre: String,
-    val direccion: String,
-    val telefono: String,
-    val precioKilo: Double
+    val nom: String,
+    val direc: String,
+    val telef: String,
+    val preciokilo: Double,
 )
-data class ClienteItem(val id: Int, val nombre: String, val preciokilo: Double) {
-    override fun toString(): String = nombre
+data class ClienteItem(val id: Int, val nom: String, val preciokilo: Double) {
+    override fun toString(): String = nom
 }

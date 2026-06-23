@@ -47,7 +47,7 @@ class HistorialCobroAdapter(
 
         // 🔴 Pintar saldo
         when {
-            item.saldo > 100000 -> {
+            item.saldo > 1000000 -> {
                 holder.tvDeuda.setTextColor(android.graphics.Color.RED)
             }
             item.saldo == 0.0 -> {

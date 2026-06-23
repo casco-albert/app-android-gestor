@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.graphics.Paint
@@ -8,8 +9,6 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
-import androidx.core.content.FileProvider
-import java.io.File
 import java.text.DecimalFormat
 
 object ExportPDF {
@@ -17,82 +16,83 @@ object ExportPDF {
     fun crearPDFEnDescargas(context: Context, lista: List<HistorialCobro>) {
 
         val listaOrdenada = lista.sortedByDescending { it.fecha }
-
-        val baseDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val carpeta = File(baseDir, "HistorialCobPDF")
-        if (!carpeta.exists()) carpeta.mkdirs()
         val formato = DecimalFormat("#,##0")
 
-        val file = File(carpeta, "Historial_Cobros.pdf")
-
-        val document = PdfDocument()
-        val page = document.startPage(PdfDocument.PageInfo.Builder(595, 842, 1).create())
-        val canvas = page.canvas
-
-        val paint = Paint()
-        paint.textSize = 12f
-
-        val paintBold = Paint()
-        paintBold.textSize = 13f
-        paintBold.isFakeBoldText = true
-
-        // 🔹 Posiciones de columnas (X)
-        val xFecha = 40f
-        val xCliente = 120f
-        val xMonto = 340f
-        val xPago = 340f
-        val xSaldo = 450f
-
-        var y = 50f
-
-        canvas.drawText("Fecha", xFecha, y, paintBold)
-        canvas.drawText("Cliente", xCliente, y, paintBold)
-        canvas.drawText("Cantidad", xMonto, y, paintBold)
-        canvas.drawText("Cantidad", xMonto, y, paintBold)
-        canvas.drawText("Saldo", xSaldo, y, paintBold)
-
-        y += 15f
-
-        canvas.drawLine(40f, y, 550f, y, paintBold)
-
-        y += 20f
-
-        for (item in listaOrdenada) {
-
-            canvas.drawText(item.fecha, xFecha, y, paint)
-            canvas.drawText(item.nombreCliente, xCliente, y, paint)
-
-            canvas.drawText(formato.format(item.monto), xMonto, y, paint)
-            canvas.drawText(formato.format(item.saldo), xSaldo, y, paint)
-
-
-            y += 20f
-
-            // 🔹 Salto de página si se llena
-            if (y > 800) {
-                document.finishPage(page)
-                y = 50f
-            }
+        // ✅ MediaStore en vez de FileOutputStream directo
+        val fileName = "Historial_Cobros_${System.currentTimeMillis()}.pdf"
+        val resolver = context.contentResolver
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+            put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
         }
 
-        document.finishPage(page)
-        document.writeTo(file.outputStream())
-        document.close()
+        val uri: Uri = resolver.insert(
+            MediaStore.Files.getContentUri("external"),
+            contentValues
+        ) ?: run {
+            Toast.makeText(context, "Error al crear archivo", Toast.LENGTH_SHORT).show()
+            return
+        }
 
-        Toast.makeText(context, "PDF guardado en: ${file.absolutePath}", Toast.LENGTH_SHORT).show()
+        resolver.openOutputStream(uri)?.use { outputStream ->
 
-        val uri: Uri = FileProvider.getUriForFile(
-            context,
-            context.packageName + ".provider",
-            file
-        )
+            val document = PdfDocument()
+            val page = document.startPage(
+                PdfDocument.PageInfo.Builder(595, 842, 1).create()
+            )
+            val canvas = page.canvas
 
+            val paint = Paint().apply { textSize = 12f }
+            val paintBold = Paint().apply {
+                textSize = 13f
+                isFakeBoldText = true
+            }
+
+            val xFecha    = 40f
+            val xCliente  = 120f
+            val xMonto    = 340f
+            val xSaldo    = 450f
+
+            var y = 50f
+
+            // Encabezados
+            canvas.drawText("Fecha",    xFecha,   y, paintBold)
+            canvas.drawText("Cliente",  xCliente, y, paintBold)
+            canvas.drawText("Monto",    xMonto,   y, paintBold)
+            canvas.drawText("Saldo",    xSaldo,   y, paintBold)
+
+            y += 15f
+            canvas.drawLine(40f, y, 550f, y, paintBold)
+            y += 20f
+
+            for (item in listaOrdenada) {
+                canvas.drawText(item.fecha,                       xFecha,   y, paint)
+                canvas.drawText(item.nombreCliente,               xCliente, y, paint)
+                canvas.drawText(formato.format(item.monto),       xMonto,   y, paint)
+                canvas.drawText(formato.format(item.saldo),       xSaldo,   y, paint)
+
+                y += 20f
+
+                if (y > 800) {
+                    document.finishPage(page)
+                    y = 50f
+                }
+            }
+
+            document.finishPage(page)
+            document.writeTo(outputStream)
+            document.close()
+        }
+
+        Toast.makeText(context, "PDF guardado en Descargas", Toast.LENGTH_SHORT).show()
+
+        // Compartir
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "application/pdf"
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-
         context.startActivity(Intent.createChooser(intent, "Compartir PDF"))
     }
 }

@@ -1,22 +1,36 @@
 package com.example.myapplication
 
-import android.content.ContentValues
+import android.app.AlertDialog
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
+import android.widget.*
 import androidx.fragment.app.Fragment
-import com.example.myapplication.databinding.FragmentPedidosBinding
-import androidx.navigation.fragment.findNavController
+import com.example.myapplication.ui.ApiService
+import com.example.myapplication.ui.RetrofitClient
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
-class PedidosFragment : Fragment() {
+class PedidoFragment : Fragment() {
 
-    private var clienteIdSeleccionado: Int = -1
-    private var _binding: FragmentPedidosBinding? = null
-    private val binding get() = _binding!!
+    private lateinit var spinnerClientes: Spinner
+    private lateinit var editCantidad: EditText
+    private lateinit var editKilos: EditText
+    private lateinit var editPrecio: EditText
+    private lateinit var btnGuardar: Button
+
+    private var cliId: Int = 0
+    private var idCarga: Int = 0
+    private var esEdicion: Boolean = false
+    private var pedidoId: Int = 0
+    private var cantidadActual: Int = 0
+
+    private lateinit var api: ApiService
+    private var listaClientes = mutableListOf<Cliente>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -24,177 +38,197 @@ class PedidosFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
 
-        _binding = FragmentPedidosBinding.inflate(inflater, container, false)
+        val view = inflater.inflate(R.layout.fragment_pedidos, container, false)
 
-        // 🔥 RECIBIR CLIENTE DESDE CLICK
-        clienteIdSeleccionado = arguments?.getInt("cliente_id") ?: -1
+        spinnerClientes = view.findViewById(R.id.spinnerClientes)
+        editCantidad = view.findViewById(R.id.editCantidad)
+        editKilos = view.findViewById(R.id.editKilos)
+        editPrecio = view.findViewById(R.id.editPrecio)
+        btnGuardar = view.findViewById(R.id.btnGuardarPedido)
 
-        generarNumeroPedido()
-        cargarClientes() // 🔥 IMPORTANTE
+        // Leer argumentos
+        cliId = arguments?.getInt("cli_id", 0) ?: 0
+        idCarga = arguments?.getInt("id_carga", 0) ?: 0
+        esEdicion = arguments?.getBoolean("es_edicion", false) ?: false
+        pedidoId = arguments?.getInt("pedido_id", 0) ?: 0
+        cantidadActual = arguments?.getInt("cantidad_actual", 0) ?: 0
 
-        // Listener cantidad
-        binding.editCantidad.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                actualizarKilosYPrecio()
-            }
-        })
+        api = RetrofitClient.api
 
-        // Spinner change
-        binding.spinnerClientes.onItemSelectedListener =
-            object : android.widget.AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    parent: android.widget.AdapterView<*>,
-                    view: View?,
-                    position: Int,
-                    id: Long
-                ) {
-                    actualizarKilosYPrecio()
-                }
+        editKilos.isEnabled = false
+        editPrecio.isEnabled = false
 
-                override fun onNothingSelected(parent: android.widget.AdapterView<*>) {}
-            }
-
-        binding.btnGuardarPedido.setOnClickListener {
-            insertarPedido()
+        // Configurar UI según modo
+        if (esEdicion) {
+            btnGuardar.text = "Actualizar"
+            spinnerClientes.isEnabled = false
+            editCantidad.setText(cantidadActual.toString())
+        } else {
+            btnGuardar.text = "Guardar"
         }
 
-        return binding.root
+        cargarClientes()
+
+        editCantidad.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                calcularTotales()
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
+        spinnerClientes.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                calcularTotales()
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        btnGuardar.setOnClickListener {
+            if (esEdicion) actualizarPedido() else guardarPedido()
+        }
+
+        return view
     }
 
-    // 🔥 CARGAR CLIENTES + SELECCION AUTOMÁTICA
     private fun cargarClientes() {
+        api.getClientes().enqueue(object : Callback<ApiResponse<List<Cliente>>> {
+            override fun onResponse(
+                call: Call<ApiResponse<List<Cliente>>>,
+                response: Response<ApiResponse<List<Cliente>>>
+            ) {
+                if (!response.isSuccessful) {
+                    Toast.makeText(requireContext(), "Error cargando clientes", Toast.LENGTH_SHORT).show()
+                    return
+                }
 
-        val dbHelper = SQLite(requireContext())
-        val clientes = dbHelper.obtenerClientes()
+                listaClientes = response.body()?.data?.toMutableList() ?: mutableListOf()
 
-        if (clientes.isEmpty()) {
+                val nombres = listaClientes.map { it.nom }
+                val adapterSpinner = ArrayAdapter(
+                    requireContext(),
+                    android.R.layout.simple_spinner_item,
+                    nombres
+                )
+                adapterSpinner.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                spinnerClientes.adapter = adapterSpinner
+
+                val posicion = listaClientes.indexOfFirst { it.id == cliId }
+                if (posicion >= 0) spinnerClientes.setSelection(posicion)
+
+                calcularTotales()
+            }
+
+            override fun onFailure(call: Call<ApiResponse<List<Cliente>>>, t: Throwable) {
+                Toast.makeText(requireContext(), "Error: ${t.message}", Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    private fun calcularTotales() {
+        if (!this::spinnerClientes.isInitialized) return
+        if (listaClientes.isEmpty()) return
+        if (spinnerClientes.selectedItemPosition < 0) return
+
+        val position = spinnerClientes.selectedItemPosition
+        if (position >= listaClientes.size) return
+
+        val cantidad = editCantidad.text.toString().toIntOrNull() ?: 0
+        val cliente = listaClientes[position]
+
+        val kilos = cantidad * 40.0
+        val precio = kilos * cliente.preciokilo
+
+        editKilos.setText("%.0f".format(kilos))
+        editPrecio.setText("%.0f".format(precio))
+    }
+
+    private fun guardarPedido() {
+        if (listaClientes.isEmpty()) {
             Toast.makeText(requireContext(), "No hay clientes disponibles", Toast.LENGTH_SHORT).show()
             return
         }
 
-        val listaClientes = mutableListOf<ClienteItem>()
-        listaClientes.add(ClienteItem(0, "Seleccionar cliente", 0.0))
-
-        clientes.forEach { cliente ->
-            listaClientes.add(
-                ClienteItem(cliente.id, cliente.nombre, cliente.precioKilo)
-            )
+        val cantidad = editCantidad.text.toString().toIntOrNull()
+        if (cantidad == null || cantidad <= 0) {
+            Toast.makeText(requireContext(), "Ingrese una cantidad válida", Toast.LENGTH_SHORT).show()
+            return
         }
 
-        val adapter = android.widget.ArrayAdapter(
-            requireContext(),
-            R.layout.spinner_dropdown_item,
-            listaClientes
+        val cliente = listaClientes.find { it.id == cliId }
+        if (cliente == null) {
+            Toast.makeText(requireContext(), "Cliente no válido", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val pedido = PedidoRequest(
+            cli_id = cliente.id,
+            id_carga = idCarga,
+            cantidad = cantidad
         )
 
-        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
-        binding.spinnerClientes.adapter = adapter
-
-        // 🔥 AQUÍ ESTÁ LA MAGIA (SELECCION AUTOMÁTICA)
-        if (clienteIdSeleccionado != -1) {
-            val index = listaClientes.indexOfFirst {
-                it.id == clienteIdSeleccionado
+        api.crearPedido(pedido).enqueue(object : Callback<PedidoResponse> {
+            override fun onResponse(
+                call: Call<PedidoResponse>,
+                response: Response<PedidoResponse>
+            ) {
+                if (response.isSuccessful) {
+                    Toast.makeText(requireContext(), "Pedido guardado correctamente", Toast.LENGTH_SHORT).show()
+                    editCantidad.setText("")
+                    editKilos.setText("")
+                    editPrecio.setText("")
+                } else {
+                    Toast.makeText(requireContext(), "Error ${response.code()}", Toast.LENGTH_LONG).show()
+                }
             }
-
-            if (index != -1) {
-                binding.spinnerClientes.setSelection(index)
+            override fun onFailure(call: Call<PedidoResponse>, t: Throwable) {
+                Toast.makeText(requireContext(), "Error: ${t.message}", Toast.LENGTH_LONG).show()
             }
-        }
+        })
     }
 
-    // 🔥 INSERTAR PEDIDO
-    private fun insertarPedido() {
+    private fun actualizarPedido() {
+        val cantidad = editCantidad.text.toString().toIntOrNull()
 
-        val dbHelper = SQLite(requireContext())
-        val baseDatos = dbHelper.writableDatabase
-
-        val nroPedido = binding.editNroPedido.text.toString()
-        val cantidadTexto = binding.editCantidad.text.toString()
-        val clienteSeleccionado = binding.spinnerClientes.selectedItem as? ClienteItem
-
-        if (clienteSeleccionado == null || nroPedido.isEmpty() || cantidadTexto.isEmpty()) {
-            Toast.makeText(requireContext(), "Complete todos los campos", Toast.LENGTH_SHORT).show()
+        if (cantidad == null || cantidad < 0) {
+            Toast.makeText(requireContext(), "Ingrese una cantidad válida", Toast.LENGTH_SHORT).show()
             return
         }
 
-        val cantidad = cantidadTexto.toInt()
-        val kilos = cantidad * 40
-        val precio = kilos * clienteSeleccionado.preciokilo
-
-        val idCarga = dbHelper.obtenerUltimaCargaId()
-
-        if (dbHelper.existePedidoEnCarga(clienteSeleccionado.id, idCarga)) {
-            Toast.makeText(
-                requireContext(),
-                "Cliente ya tiene pedido en esta Carga",
-                Toast.LENGTH_LONG
-            ).show()
-
-            baseDatos.close()
+        // Si cantidad es 0 → confirmar eliminación
+        if (cantidad == 0) {
+            AlertDialog.Builder(requireContext())
+                .setTitle("Eliminar Pedido")
+                .setMessage("¿Eliminar el pedido de este cliente?")
+                .setPositiveButton("Sí") { _, _ ->
+                    enviarActualizacion(0)
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
             return
         }
 
-        val registro = ContentValues().apply {
-            put("nro_pedido", nroPedido)
-            put("cli_id", clienteSeleccionado.id)
-            put("id_carga", idCarga)
-            put("cantidad", cantidad)
-            put("kilos", kilos.toDouble())
-            put("precio", precio)
-        }
-
-        val resultado = baseDatos.insert("pedidos", null, registro)
-        baseDatos.close()
-
-        if (resultado != -1L) {
-            Toast.makeText(requireContext(), "Pedido guardado correctamente", Toast.LENGTH_SHORT).show()
-            findNavController().popBackStack()
-        } else {
-            Toast.makeText(requireContext(), "Error al guardar pedido", Toast.LENGTH_SHORT).show()
-        }
+        enviarActualizacion(cantidad)
     }
 
-    private fun limpiarCampos() {
-        binding.editNroPedido.text.clear()
-        binding.editCantidad.text.clear()
-        binding.editKilos.text.clear()
-        binding.editPrecio.text.clear()
-    }
-
-    private fun actualizarKilosYPrecio() {
-        val cantidadTexto = binding.editCantidad.text.toString()
-        if (cantidadTexto.isEmpty()) {
-            binding.editKilos.text.clear()
-            binding.editPrecio.text.clear()
-            return
-        }
-
-        val cantidad = cantidadTexto.toIntOrNull() ?: return
-        val clienteSeleccionado = binding.spinnerClientes.selectedItem as? ClienteItem ?: return
-
-        val kilos = cantidad * 40
-        val precio = kilos * clienteSeleccionado.preciokilo
-
-        binding.editKilos.setText(kilos.toString())
-        binding.editPrecio.setText(precio.toString())
-    }
-
-    private fun generarNumeroPedido() {
-        val dbHelper = SQLite(requireContext())
-        val idCarga = dbHelper.obtenerUltimaCargaId()
-
-        val ultimoNro = dbHelper.obtenerUltimoNroPedidoPorCarga(idCarga)
-
-        val nuevoNro = ultimoNro + 1
-
-        binding.editNroPedido.setText(nuevoNro.toString())
-        binding.editNroPedido.isEnabled = false
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+    private fun enviarActualizacion(cantidad: Int) {
+        api.actualizarPedido(pedidoId, ActualizarCantidadRequest(cantidad = cantidad))
+            .enqueue(object : Callback<PedidoResponse> {
+                override fun onResponse(
+                    call: Call<PedidoResponse>,
+                    response: Response<PedidoResponse>
+                ) {
+                    if (response.isSuccessful) {
+                        val mensaje = if (cantidad == 0) "Pedido eliminado" else "Pedido actualizado correctamente"
+                        Toast.makeText(requireContext(), mensaje, Toast.LENGTH_SHORT).show()
+                        requireActivity().onBackPressed()  // volver al listado
+                    } else {
+                        Toast.makeText(requireContext(), "Error ${response.code()}", Toast.LENGTH_LONG).show()
+                    }
+                }
+                override fun onFailure(call: Call<PedidoResponse>, t: Throwable) {
+                    Toast.makeText(requireContext(), "Error: ${t.message}", Toast.LENGTH_LONG).show()
+                }
+            })
     }
 }

@@ -59,13 +59,13 @@ object ExportPDFPedidos {
         // 🔹 Datos
         for (p in lista) {
 
-            canvas.drawText(p.nroPedido, colNro, y, paint)
+            canvas.drawText(p.nro_pedido, colNro, y, paint)
 
             // Limitar cliente para que no rompa la tabla
-            val cliente = if (p.cliente.length > 15) {
-                p.cliente.substring(0, 15)
+            val cliente = if (p.nom.length > 15) {
+                p.nom.substring(0, 15)
             } else {
-                p.cliente
+                p.nom
             }
             canvas.drawText(cliente, colCliente, y, paint)
 

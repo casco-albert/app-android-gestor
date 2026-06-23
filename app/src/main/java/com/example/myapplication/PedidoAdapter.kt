@@ -9,15 +9,18 @@ import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
+import com.example.myapplication.ui.ApiService
 import java.text.DecimalFormat
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class PedidoAdapter(
     private var lista: MutableList<Pedido>,
-    private val db: SQLite,
-    private val onEditarClick: (Pedido) -> Unit
+    private val onEditarClick: (Pedido) -> Unit,
+    private val api: ApiService
 ) : RecyclerView.Adapter<PedidoAdapter.ViewHolder>() {
 
-    // Formato sin decimales y con miles
     private val formato = DecimalFormat("#,###")
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -42,115 +45,112 @@ class PedidoAdapter(
 
         val pedido = lista[position]
 
-        // Asignar datos
-        holder.txtNro.text = (position + 1).toString()
-        holder.txtClienteId.text = pedido.cliente
+        holder.txtNro.text = pedido.nro_pedido ?: ""
+        holder.txtClienteId.text = pedido.nom ?: "N/A"
         holder.txtCantidad.text = pedido.cantidad.toString()
         holder.txtKilo.text = formato.format(pedido.kilos)
         holder.txtPrecio.text = formato.format(pedido.precio)
 
-        // 🔥 Evitar bug de reciclado
         holder.checkEntrega.setOnCheckedChangeListener(null)
-
         holder.checkEntrega.isChecked = pedido.entrega == 1
 
         if (pedido.entrega == 1) {
-            //holder.btnEditar.isEnabled = false
             holder.btnEditar.alpha = 0.3f
-            holder.checkEntrega.isEnabled = true
-
+            holder.btnEditar.isEnabled = false
             holder.itemView.setBackgroundColor(Color.parseColor("#C8E6C9"))
         } else {
-            holder.btnEditar.isEnabled = true
             holder.btnEditar.alpha = 1f
-            holder.checkEntrega.isEnabled = true
+            holder.btnEditar.isEnabled = true
 
-            // Zebra
-            if (position % 2 == 0) {
+            if (position % 2 == 0)
                 holder.itemView.setBackgroundColor(Color.parseColor("#F5F5F5"))
-            } else {
+            else
                 holder.itemView.setBackgroundColor(Color.WHITE)
-            }
         }
 
-        // ✅ Evento checkbox
         holder.checkEntrega.setOnCheckedChangeListener { _, isChecked ->
+
+            val currentPos = holder.adapterPosition
+            if (currentPos == RecyclerView.NO_POSITION) return@setOnCheckedChangeListener
+
+            val pedidoActual = lista[currentPos]
 
             if (isChecked) {
 
-                // Marcar entregado
-                db.marcarPedidoEntregado(pedido.id)
+                api.marcarEntregado(pedidoActual.id)
+                    .enqueue(object : Callback<Void> {
 
-                // Generar deuda
-                db.generarDeuda(
-                    pedido.id,
-                    pedido.cli_id,
-                    pedido.precio
-                )
+                        override fun onResponse(call: Call<Void>, response: Response<Void>) {
 
-                // Actualizar modelo
-                pedido.entrega = 1
+                            api.generarDeuda(pedidoActual.id)
+                                .enqueue(object : Callback<Void> {
 
-                Toast.makeText(
-                    holder.itemView.context,
-                    "Pedido entregado y deuda generada",
-                    Toast.LENGTH_SHORT
-                ).show()
+                                    override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                                        pedidoActual.entrega = 1
+                                        notifyItemChanged(currentPos)
 
-                holder.itemView.setBackgroundColor(Color.parseColor("#C8E6C9"))
+                                        Toast.makeText(
+                                            holder.itemView.context,
+                                            "Pedido entregado",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+
+                                    override fun onFailure(call: Call<Void>, t: Throwable) {}
+                                })
+                        }
+
+                        override fun onFailure(call: Call<Void>, t: Throwable) {
+                            Toast.makeText(holder.itemView.context, t.message, Toast.LENGTH_SHORT).show()
+                        }
+                    })
 
             } else {
 
-                // Eliminar deuda
-                db.eliminarDeudaPorPedido(pedido.id)
+                api.eliminarDeuda(pedidoActual.id)
+                    .enqueue(object : Callback<Void> {
 
-                // Desmarcar entregado
-                db.desmarcarPedidoEntregado(pedido.id)
+                        override fun onResponse(call: Call<Void>, response: Response<Void>) {
 
-                // Actualizar modelo
-                pedido.entrega = 0
+                            api.desmarcarEntregado(pedidoActual.id)
+                                .enqueue(object : Callback<Void> {
 
-                Toast.makeText(
-                    holder.itemView.context,
-                    "Deuda eliminada",
-                    Toast.LENGTH_SHORT
-                ).show()
+                                    override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                                        pedidoActual.entrega = 0
+                                        notifyItemChanged(currentPos)
 
-                // Restaurar zebra
-                if (position % 2 == 0) {
-                    holder.itemView.setBackgroundColor(Color.parseColor("#F5F5F5"))
-                } else {
-                    holder.itemView.setBackgroundColor(Color.WHITE)
-                }
+                                        Toast.makeText(
+                                            holder.itemView.context,
+                                            "Deuda eliminada",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+
+                                    override fun onFailure(call: Call<Void>, t: Throwable) {}
+                                })
+                        }
+
+                        override fun onFailure(call: Call<Void>, t: Throwable) {}
+                    })
             }
         }
 
-        // Editar
         holder.btnEditar.setOnClickListener {
             onEditarClick(pedido)
         }
-    }
-
-    fun ordenarPorNumero() {
-        lista.sortBy {
-            it.nroPedido.toDouble()
-        }
-        notifyDataSetChanged()
-    }
-
-    fun ordenarPorNumeroDesc() {
-        lista.sortByDescending { it.nroPedido.toInt() }
-        notifyDataSetChanged()
     }
 
     fun actualizarLista(nuevaLista: MutableList<Pedido>) {
         lista = nuevaLista
         notifyDataSetChanged()
     }
+    fun ordenarPorNumero() {
+        lista.sortBy { it.nro_pedido.toInt() }
+        notifyDataSetChanged()
+    }
 
-    fun eliminarItem(position: Int) {
-        lista.removeAt(position)
-        notifyItemRemoved(position)
-        notifyItemRangeChanged(position, lista.size)
+    fun ordenarPorNumeroDesc() {
+        lista.sortByDescending { it.nro_pedido.toInt() }
+        notifyDataSetChanged()
     }
 }

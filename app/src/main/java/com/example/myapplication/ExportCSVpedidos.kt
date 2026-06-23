@@ -35,8 +35,8 @@ object ExportCSVPedidos {
 
             for (p in lista) {
                 writer.append(
-                    "${p.nroPedido};" +
-                            "${p.cliente};" +
+                    "${p.nro_pedido};" +
+                            "${p.nom};" +
                             "${p.cantidad};" +
                             "${formato.format(p.kilos)};" +
                             "${formato.format(p.precio)}\n"

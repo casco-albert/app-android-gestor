@@ -1,6 +1,5 @@
 package com.example.myapplication
 
-import android.content.ContentValues
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -9,6 +8,10 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import com.example.myapplication.ui.RetrofitClient
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class ClienteFragment : Fragment() {
 
@@ -19,12 +22,14 @@ class ClienteFragment : Fragment() {
     private lateinit var txtPreciokilo: EditText
     private lateinit var btnGuardar: Button
 
+    private val api = RetrofitClient.api
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.fragment_cliente, container, false)
+    ): View {
+        return inflater.inflate(com.example.myapplication.R.layout.fragment_cliente, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -38,14 +43,11 @@ class ClienteFragment : Fragment() {
         btnGuardar = view.findViewById(R.id.btnGuardar)
 
         btnGuardar.setOnClickListener {
-            insertar()
+            insertarCliente()
         }
     }
 
-    private fun insertar() {
-
-        val con = SQLite(requireContext())
-        val baseadatos = con.writableDatabase
+    private fun insertarCliente() {
 
         val rec = txtOrden.text.toString()
         val nom = txtNom.text.toString()
@@ -53,28 +55,43 @@ class ClienteFragment : Fragment() {
         val telef = txtTelef.text.toString()
         val precioKilo = txtPreciokilo.text.toString()
 
-        if (rec.isNotEmpty() && nom.isNotEmpty()
-            && telef.isNotEmpty() && precioKilo.isNotEmpty()) {
-
-            val registro = ContentValues()
-            registro.put("rec", rec.toDouble())
-            registro.put("nom", nom)
-            registro.put("direc", direc)
-            registro.put("telef", telef)
-            registro.put("preciokilo", precioKilo.toDouble())
-
-            val resultado = baseadatos.insert("clientes", null, registro)
-            baseadatos.close()
-
-            if (resultado != -1L) {
-                Toast.makeText(requireContext(), "Cliente guardado", Toast.LENGTH_SHORT).show()
-                limpiarCampos()
-            } else {
-                Toast.makeText(requireContext(), "Error al guardar", Toast.LENGTH_SHORT).show()
-            }
-        } else {
+        if (rec.isEmpty() || nom.isEmpty() || telef.isEmpty() || precioKilo.isEmpty()) {
             Toast.makeText(requireContext(), "Complete los campos obligatorios", Toast.LENGTH_SHORT).show()
+            return
         }
+
+        val cliente = Cliente(
+            rec = rec.toDouble(),
+            nom = nom,
+            direc = direc,
+            telef = telef,
+            preciokilo = precioKilo.toDouble()
+        )
+
+        api.insertarCliente(cliente).enqueue(object : Callback<Cliente> {
+
+            override fun onResponse(call: Call<Cliente>, response: Response<Cliente>) {
+
+                if (response.isSuccessful) {
+                    Toast.makeText(requireContext(), "Cliente guardado correctamente", Toast.LENGTH_SHORT).show()
+                    limpiarCampos()
+                } else {
+                    Toast.makeText(
+                        requireContext(),
+                        "Error en servidor: ${response.code()}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
+            override fun onFailure(call: Call<Cliente>, t: Throwable) {
+                Toast.makeText(
+                    requireContext(),
+                    "Error de red: ${t.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        })
     }
 
     private fun limpiarCampos() {
@@ -84,5 +101,4 @@ class ClienteFragment : Fragment() {
         txtTelef.text.clear()
         txtPreciokilo.text.clear()
     }
-
 }

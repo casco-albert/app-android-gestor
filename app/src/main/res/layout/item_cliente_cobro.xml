@@ -1,55 +1,101 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="10dp"
-    android:background="#FFFFFF"
-    android:gravity="center_vertical"
-    android:layout_marginBottom="4dp">
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="4dp"
+    app:cardCornerRadius="10dp"
+    app:cardElevation="3dp">
 
-    <!-- Nombre del cliente -->
-    <TextView
-        android:id="@+id/tvNombreCliente"
-        android:layout_width="0dp"
-        android:layout_weight="1.5"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Cliente"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:ellipsize="end"
-        android:singleLine="true"/>
+        android:orientation="vertical">
 
-    <!-- Deuda -->
-    <TextView
-        android:id="@+id/tvDeudaCliente"
-        android:layout_width="0dp"
-        android:layout_weight="1"
-        android:layout_height="wrap_content"
-        android:text="0.00"
-        android:textColor="#D32F2F"
-        android:textSize="16sp"
-        android:gravity="end"
-        android:singleLine="true"/>
-    <EditText
-        android:id="@+id/etMontoCobro"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1.2"
-        android:inputType="numberDecimal"
-        android:hint="Monto"
-        android:gravity="end"
-        android:padding="6dp"
-        android:maxLines="1"/>
-    <!-- Botón cobrar -->
-    <ImageButton
-        android:id="@+id/btnCobrar"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:src="@drawable/outline_attach_money_24"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Cobrar"
-        android:scaleType="centerInside"
-        android:padding="4dp"/>
-</LinearLayout>
+        <!-- ── HEADER (siempre visible) ── -->
+        <LinearLayout
+            android:id="@+id/layoutClienteHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="12dp"
+            android:background="?attr/selectableItemBackground">
+
+            <TextView
+                android:id="@+id/tvNombreCliente"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Cliente"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#212121"
+                android:ellipsize="end"
+                android:singleLine="true"/>
+
+            <TextView
+                android:id="@+id/tvDeudaCliente"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gs. 0"
+                android:textSize="14sp"
+                android:textColor="#D32F2F"
+                android:layout_marginEnd="8dp"/>
+
+            <ImageView
+                android:id="@+id/ivFlecha"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_expand_more"
+                android:contentDescription="Expandir"/>
+
+        </LinearLayout>
+
+        <!-- ── PANEL EXPANDIBLE ── -->
+        <LinearLayout
+            android:id="@+id/layoutCobro"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="12dp"
+            android:visibility="gone">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Monto a cobrar"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etMontoCobro"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:imeOptions="actionDone"
+                    android:gravity="end"/>
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <ImageButton
+                android:id="@+id/btnCobrar"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="8dp"
+                android:src="@drawable/outline_attach_money_24"
+                android:background="@drawable/bg_boton_cobrar"
+                android:contentDescription="Cobrar"
+                android:scaleType="centerInside"
+                android:padding="8dp"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

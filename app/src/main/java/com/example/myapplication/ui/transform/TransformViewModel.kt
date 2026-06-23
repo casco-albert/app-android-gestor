@@ -60,11 +60,11 @@ class ClienteAdapter(
                 R.drawable.bg_cliente
         )
 
-        holder.binding.textNombre?.text = cliente.nombre
+        holder.binding.textNombre?.text = cliente.nom
 
         // 💰 PRECIO
         holder.binding.textPrecio?.text =
-            "Precio/Kilo: ${cliente.precioKilo} GS"
+            "Precio/Kilo: ${cliente.preciokilo} GS"
 
         // 🧹 LIMPIAR LISTENERS (evita bugs por reciclado)
         holder.binding.btnEditar?.setOnClickListener(null)

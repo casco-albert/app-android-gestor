@@ -35,8 +35,8 @@
         android:label="Nuevo Cliente"
         tools:layout="@layout/fragment_cliente" />
     <fragment
-        android:id="@+id/btnNuevoPedido"
-        android:name="com.example.myapplication.PedidosFragment"
+        android:id="@+id/pedidoFragment"
+        android:name="com.example.myapplication.PedidoFragment"
         android:label="Nuevo Pedido"
         android:layout="@layout/fragment_pedidos" />
     <fragment

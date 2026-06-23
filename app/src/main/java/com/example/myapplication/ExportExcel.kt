@@ -1,13 +1,13 @@
 package com.example.myapplication
 
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
+import android.provider.MediaStore
 import android.widget.Toast
-import androidx.core.content.FileProvider
-import java.io.File
-import java.io.FileWriter
+import java.io.OutputStreamWriter
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
@@ -19,52 +19,53 @@ object ExportCSV {
             groupingSeparator = '.'
             decimalSeparator = ','
         }
-
         val formato = DecimalFormat("#,###.0", symbols)
-        val baseDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val carpeta = File(baseDir, "HistorialCobCSV")
 
-        if (!carpeta.exists()) carpeta.mkdirs()
+        val fileName = "Historial_Cobros_${System.currentTimeMillis()}.csv"
+        val resolver = context.contentResolver
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+            put(MediaStore.MediaColumns.MIME_TYPE, "text/csv")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+        }
 
-        val file = File(carpeta, "Historial_Cobros.csv")
+        val uri: Uri = resolver.insert(
+            MediaStore.Files.getContentUri("external"),
+            contentValues
+        ) ?: run {
+            Toast.makeText(context, "Error al crear archivo", Toast.LENGTH_SHORT).show()
+            return
+        }
 
         try {
-            val writer = FileWriter(file)
+            resolver.openOutputStream(uri)?.use { output ->
+                val writer = OutputStreamWriter(output)
 
-            // Encabezado con ;
-            writer.append("Cliente;Fecha;Monto;Saldo\n")
+                writer.append("Cliente;Fecha;Monto;Saldo\n")
 
-            for (item in lista) {
-                writer.append(
-                    "${item.nombreCliente};" +
-                            "${item.fecha};" +
-                            "${formato.format(item.monto)};" +
-                            "${formato.format(item.saldo)}\n"
-                )
+                for (item in lista) {
+                    writer.append(
+                        "${item.nombreCliente};" +
+                                "${item.fecha};" +
+                                "${formato.format(item.monto)};" +
+                                "${formato.format(item.saldo)}\n"
+                    )
+                }
+
+                writer.flush()
             }
 
-            writer.flush()
-            writer.close()
-
             Toast.makeText(context, "CSV guardado en Descargas", Toast.LENGTH_SHORT).show()
-
-            // 🔹 Compartir
-            val uri: Uri = FileProvider.getUriForFile(
-                context,
-                context.packageName + ".provider",
-                file
-            )
 
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/csv"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-
             context.startActivity(Intent.createChooser(intent, "Compartir CSV"))
 
         } catch (e: Exception) {
-            Toast.makeText(context, "Error al generar CSV", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Error al generar CSV: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 }

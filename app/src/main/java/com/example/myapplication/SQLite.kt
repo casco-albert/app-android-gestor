@@ -121,10 +121,10 @@ class SQLite(context: Context) :
                 val cliente = Cliente(
                     id = cursor.getInt(cursor.getColumnIndexOrThrow("id")),
                     rec = cursor.getDouble(cursor.getColumnIndexOrThrow("rec")),
-                    nombre = cursor.getString(cursor.getColumnIndexOrThrow("nom")),
-                    direccion = cursor.getString(cursor.getColumnIndexOrThrow("direc")),
-                    telefono = cursor.getString(cursor.getColumnIndexOrThrow("telef")),
-                    precioKilo = cursor.getDouble(cursor.getColumnIndexOrThrow("preciokilo"))
+                    nom = cursor.getString(cursor.getColumnIndexOrThrow("nom")),
+                    direc = cursor.getString(cursor.getColumnIndexOrThrow("direc")),
+                    telef = cursor.getString(cursor.getColumnIndexOrThrow("telef")),
+                    preciokilo = cursor.getDouble(cursor.getColumnIndexOrThrow("preciokilo"))
                 )
 
                 lista.add(cliente)
@@ -185,13 +185,14 @@ class SQLite(context: Context) :
             do {
                 val pedido = Pedido(
                     id = cursor.getInt(0),
-                    nroPedido = cursor.getString(1),
-                    cli_id = cursor.getInt(2),             // ✅ aquí
-                    cliente = cursor.getString(3),
-                    cantidad = cursor.getInt(4),
-                    kilos = cursor.getDouble(5),
-                    precio = cursor.getDouble(6),
-                    entrega = cursor.getInt(7)
+                    nro_pedido = cursor.getString(1),
+                    cli_id = cursor.getInt(2),
+                    id_carga = cursor.getInt(3),
+                    nom = cursor.getString(4),
+                    cantidad = cursor.getInt(5),
+                    kilos = cursor.getDouble(6),
+                    precio = cursor.getDouble(7),
+                    entrega = cursor.getInt(8)
                 )
                 lista.add(pedido)
 
@@ -265,13 +266,14 @@ class SQLite(context: Context) :
             do {
                 val pedido = Pedido(
                     id = cursor.getInt(0),
-                    nroPedido = cursor.getString(1),
+                    nro_pedido = cursor.getString(1),
                     cli_id = cursor.getInt(2),
-                    cliente = cursor.getString(3),
-                    cantidad = cursor.getInt(4),
-                    kilos = cursor.getDouble(5),
-                    precio = cursor.getDouble(6),
-                    entrega = cursor.getInt(7)
+                    id_carga = cursor.getInt(3),
+                    nom = cursor.getString(4),
+                    cantidad = cursor.getInt(5),
+                    kilos = cursor.getDouble(6),
+                    precio = cursor.getDouble(7),
+                    entrega = cursor.getInt(8)
                 )
                 lista.add(pedido)
             } while (cursor.moveToNext())
@@ -344,10 +346,10 @@ class SQLite(context: Context) :
             val cliente = Cliente(
                 id = cursor.getInt(0),
                 rec = cursor.getDouble(1),
-                nombre = cursor.getString(2),
-                direccion = cursor.getString(3),
-                telefono = cursor.getString(4),
-                precioKilo = cursor.getDouble(5)
+                nom = cursor.getString(2),
+                direc = cursor.getString(3),
+                telef = cursor.getString(4),
+                preciokilo = cursor.getDouble(5)
             )
 
             val cantidad = cursor.getInt(6)
@@ -544,7 +546,7 @@ class SQLite(context: Context) :
                     DeudaCliente(
                         cliente = cliente,
                         deuFecha = fecha,
-                        monto = monto.toDouble(),
+                        deuCantidad = monto,
                         saldoAnterior = saldoAnterior,
                         montoCobro = montoCobro,
                         totalDeuda = totalDeuda
@@ -578,11 +580,11 @@ class SQLite(context: Context) :
             do {
                 val cliente = Cliente(
                     id = cursor.getInt(0),
-                    nombre = cursor.getString(1),
+                    nom = cursor.getString(1),
                     rec = 0.0,
-                    direccion = "",
-                    telefono = "",
-                    precioKilo = 0.0
+                    direc = "",
+                    telef = "",
+                    preciokilo = 0.0
                 )
                 lista.add(cliente)
             } while (cursor.moveToNext())

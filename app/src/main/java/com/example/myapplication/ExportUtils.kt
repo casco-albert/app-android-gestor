@@ -23,11 +23,11 @@ object ExportUtils {
         return try {
             if (fecha.all { it.isDigit() }) {
                 val timestamp = fecha.toLong()
-                val formato = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                formato.format(Date(timestamp))
+                val formato = SimpleDateFormat("dd/MM", Locale.getDefault())
+                formato.format(Date(timestamp * 1000))  // ← * 1000
             } else {
                 val formatoEntrada = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                val formatoSalida = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                val formatoSalida = SimpleDateFormat("dd/MM", Locale.getDefault())
                 formatoSalida.format(formatoEntrada.parse(fecha)!!)
             }
         } catch (e: Exception) {
@@ -66,10 +66,11 @@ object ExportUtils {
                 writer.append("Cliente;Fecha;Cantidad;Saldo Anterior;Pagos;Total\n")
 
                 for (item in lista) {
+                    // CSV — línea del for
                     writer.append(
                         "${item.cliente};" +
                                 "${formatearFecha(item.deuFecha)};" +
-                                "${formatearNumero(item.monto)};" +
+                                "${item.deuCantidad};" +          //
                                 "${formatearNumero(item.saldoAnterior)};" +
                                 "${formatearNumero(item.montoCobro)};" +
                                 "${formatearNumero(item.totalDeuda)}\n"
@@ -137,9 +138,8 @@ object ExportUtils {
 
                 canvas.drawText(item.cliente, 40f, y.toFloat(), paint)
                 canvas.drawText(formatearFecha(item.deuFecha), 150f, y.toFloat(), paint)
-                canvas.drawText(formatearNumero(item.monto), 230f, y.toFloat(), paint)
+                canvas.drawText(item.deuCantidad.toString(), 230f, y.toFloat(), paint)
                 canvas.drawText(formatearNumero(item.saldoAnterior), 300f, y.toFloat(), paint)
-                canvas.drawText(formatearNumero(item.montoCobro), 380f, y.toFloat(), paint)
                 canvas.drawText(formatearNumero(item.totalDeuda), 460f, y.toFloat(), paint)
 
                 y += 20

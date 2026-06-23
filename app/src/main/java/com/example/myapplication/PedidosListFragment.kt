@@ -1,7 +1,6 @@
 package com.example.myapplication
 
 import android.app.AlertDialog
-import android.content.ContentValues
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,15 +9,20 @@ import android.widget.*
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.myapplication.databinding.FragmentPedidosListBinding
-import java.io.File
-import java.io.FileWriter
+import com.example.myapplication.ui.RetrofitClient
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class PedidosListFragment : Fragment() {
 
-    private lateinit var binding: FragmentPedidosListBinding
-    private lateinit var dbHelper: SQLite
+    private var _binding: FragmentPedidosListBinding? = null
+    private val binding get() = _binding!!
     private lateinit var adapter: PedidoAdapter
+    private var idCargaSeleccionada: Int = -1
+
     private var listaCargas = listOf<Carga>()
+    private var listaPedidos = mutableListOf<Pedido>()
 
     lateinit var txtTotalCantidad: TextView
     lateinit var txtTotalKilos: TextView
@@ -28,69 +32,124 @@ class PedidosListFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+         adapter = PedidoAdapter(
+            mutableListOf(),
+            onEditarClick = { pedido ->
+                mostrarDialogEditarCantidad(pedido)
+            },
+            api = RetrofitClient.api
+        )
 
-        binding = FragmentPedidosListBinding.inflate(inflater, container, false)
-        dbHelper = SQLite(requireContext())
+        _binding = FragmentPedidosListBinding.inflate(inflater, container, false)
 
-        // Spinner
-        cargarSpinnerCargas()
+        binding.recyclerPedidos.layoutManager =
+            LinearLayoutManager(requireContext())
 
-        // 🔹 BOTÓN PDF
-        binding.btnPDF.setOnClickListener {
-            crearPDFPedidos()
-        }
+        binding.recyclerPedidos.adapter = adapter
+        val view = binding.root
 
-        // 🔹 BOTÓN CSV
-        binding.btnCSV.setOnClickListener {
-            exportarCSVPedidos()
-        }
         txtTotalCantidad = binding.txtTotalCantidad
         txtTotalKilos = binding.txtTotalKilos
+
+        cargarSpinnerCargas()
+        binding.btnPDF.setOnClickListener { compartirArchivo("pdf") }
+        binding.btnCSV.setOnClickListener { compartirArchivo("csv") }
 
         return binding.root
     }
 
-    // 🔹 SPINNER DE CARGAS
+    // 🔹 SPINNER (cargas desde SQLite como ya tienes)
     private fun cargarSpinnerCargas() {
-        listaCargas = dbHelper.obtenerCargas()
 
-        val adapterSpinner = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_spinner_item,
-            listaCargas.map { it.descripcion }
-        )
-        adapterSpinner.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.spinnerCargas.adapter = adapterSpinner
+        RetrofitClient.api.obtenerCargas()
+            .enqueue(object : Callback<ApiResponse<List<Carga>>> {
 
-        binding.spinnerCargas.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                val cargaSeleccionada = listaCargas[position]
-                cargarPedidos(cargaSeleccionada.id)
-            }
+                override fun onResponse(
+                    call: Call<ApiResponse<List<Carga>>>,
+                    response: Response<ApiResponse<List<Carga>>>
+                ) {
 
-            override fun onNothingSelected(parent: AdapterView<*>) {}
-        }
+                    if (response.isSuccessful) {
+
+                        listaCargas = response.body()?.data ?: emptyList()
+
+                        val adapterSpinner = ArrayAdapter(
+                            requireContext(),
+                            android.R.layout.simple_spinner_item,
+                            listaCargas.map { it.descripcion }
+                        )
+
+                        adapterSpinner.setDropDownViewResource(
+                            android.R.layout.simple_spinner_dropdown_item
+                        )
+
+                        binding.spinnerCargas.adapter = adapterSpinner
+                        binding.spinnerCargas.onItemSelectedListener =
+                            object : AdapterView.OnItemSelectedListener {
+
+                                override fun onItemSelected(
+                                    parent: AdapterView<*>,
+                                    view: View?,
+                                    position: Int,
+                                    id: Long
+                                ) {
+
+                                    val carga = listaCargas[position]
+                                    idCargaSeleccionada = carga.id
+
+                                    cargarPedidosDesdeAPI(idCargaSeleccionada)
+                                }
+
+                                override fun onNothingSelected(parent: AdapterView<*>) {}
+                            }
+
+                        // 🔥 AUTO CARGA INICIAL
+                        if (listaCargas.isNotEmpty()) {
+                            val primera = listaCargas[0]
+                            idCargaSeleccionada = primera.id
+                            cargarPedidosDesdeAPI(primera.id)
+
+                            binding.spinnerCargas.setSelection(0)
+                        }
+
+                    }
+                }
+
+                override fun onFailure(
+                    call: Call<ApiResponse<List<Carga>>>,
+                    t: Throwable
+                ) {
+                    Toast.makeText(
+                        requireContext(),
+                        "Error cargas: ${t.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            })
     }
 
-    // 🔹 CARGAR PEDIDOS
-    private fun cargarPedidos(idCarga: Int) {
-        val lista = dbHelper.obtenerPedidosPorCarga(idCarga)
-
-        adapter = PedidoAdapter(lista, dbHelper) { pedido ->
-            mostrarDialogEditarCantidad(pedido)
-        }
-
-        binding.recyclerPedidos.layoutManager = LinearLayoutManager(requireContext())
-        binding.recyclerPedidos.adapter = adapter
-        adapter.ordenarPorNumero()
-
-        actualizarTotales(
-            lista)
-
+    // 🔥 CARGAR PEDIDOS DESDE API REST
+    private fun cargarPedidosDesdeAPI(idCarga: Int) {
+        RetrofitClient.api.getPedidosPorCarga(idCarga)
+            .enqueue(object : Callback<ApiResponse<List<Pedido>>> {
+                override fun onResponse(
+                    call: Call<ApiResponse<List<Pedido>>>,
+                    response: Response<ApiResponse<List<Pedido>>>
+                ) {
+                    if (response.isSuccessful) {
+                        listaPedidos = response.body()?.data?.toMutableList() ?: mutableListOf()
+                        adapter.actualizarLista(listaPedidos)
+                        actualizarTotales(listaPedidos)
+                    }
+                }
+                override fun onFailure(call: Call<ApiResponse<List<Pedido>>>, t: Throwable) {
+                    Toast.makeText(requireContext(), t.message, Toast.LENGTH_SHORT).show()
+                }
+            })
     }
-
-    // 🔹 EDITAR CANTIDAD
+    // 🔹 EDITAR CANTIDAD (solo UI por ahora)
     private fun mostrarDialogEditarCantidad(pedido: Pedido) {
+
         val editText = EditText(requireContext())
         editText.setText(pedido.cantidad.toString())
 
@@ -98,100 +157,22 @@ class PedidosListFragment : Fragment() {
             .setTitle("Editar Cantidad")
             .setView(editText)
             .setPositiveButton("Guardar") { _, _ ->
+
                 val nuevaCantidad = editText.text.toString().toIntOrNull()
+
                 if (nuevaCantidad != null) {
-                    actualizarCantidad(pedido.id, nuevaCantidad)
+                    Toast.makeText(
+                        requireContext(),
+                        "Implementa update por API aquí",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
             .setNegativeButton("Cancelar", null)
             .show()
     }
 
-    // 🔹 ACTUALIZAR CANTIDAD
-    private fun actualizarCantidad(id: Int, nuevaCantidad: Int) {
-
-        val db = dbHelper.writableDatabase
-
-        // 🔴 SI LA CANTIDAD ES 0 → ELIMINAR
-        if (nuevaCantidad == 0) {
-            db.delete("pedidos", "id=?", arrayOf(id.toString()))
-            db.close()
-
-            val cargaActual = listaCargas.getOrNull(binding.spinnerCargas.selectedItemPosition)?.id
-            cargaActual?.let { cargarPedidos(it) }
-
-            Toast.makeText(requireContext(), "Pedido eliminado", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val cursor = db.rawQuery(
-            "SELECT cli_id FROM pedidos WHERE id=?",
-            arrayOf(id.toString())
-        )
-
-        var clienteId = 0
-        if (cursor.moveToFirst()) {
-            clienteId = cursor.getInt(0)
-        }
-        cursor.close()
-
-        val cursorCliente = db.rawQuery(
-            "SELECT preciokilo FROM clientes WHERE id=?",
-            arrayOf(clienteId.toString())
-        )
-
-        var precioKilo = 0.0
-        if (cursorCliente.moveToFirst()) {
-            precioKilo = cursorCliente.getDouble(0)
-        }
-        cursorCliente.close()
-
-        val kilos = nuevaCantidad * 40
-        val precio = kilos * precioKilo
-
-        val values = ContentValues()
-        values.put("cantidad", nuevaCantidad)
-        values.put("kilos", kilos.toDouble())
-        values.put("precio", precio)
-
-        db.update("pedidos", values, "id=?", arrayOf(id.toString()))
-        db.close()
-
-        val cargaActual = listaCargas.getOrNull(binding.spinnerCargas.selectedItemPosition)?.id
-        cargaActual?.let { cargarPedidos(it) }
-
-        Toast.makeText(requireContext(), "Pedido actualizado correctamente", Toast.LENGTH_SHORT).show()
-    }
-
-    // 🔹 EXPORTAR PDF
-    private fun crearPDFPedidos() {
-
-        val posicion = binding.spinnerCargas.selectedItemPosition
-        if (posicion == AdapterView.INVALID_POSITION) {
-            Toast.makeText(requireContext(), "Seleccione una carga", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val idCarga = listaCargas[posicion].id
-        val lista = dbHelper.obtenerPedidosPorCarga(idCarga)
-
-        ExportPDFPedidos.crearPDFEnDescargas(requireContext(), lista)
-    }
-    // 🔹 EXPORTAR CSV
-    private fun exportarCSVPedidos() {
-
-        val posicion = binding.spinnerCargas.selectedItemPosition
-        if (posicion == AdapterView.INVALID_POSITION) {
-            Toast.makeText(requireContext(), "Seleccione una carga", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val idCarga = listaCargas[posicion].id
-        val lista = dbHelper.obtenerPedidosPorCarga(idCarga)
-
-
-        ExportCSVPedidos.crearCSVEnDescargas(requireContext(), lista)
-    }
+    // 🔹 TOTALES
     private fun actualizarTotales(lista: List<Pedido>) {
 
         val totalCantidad = lista.sumOf { it.cantidad }
@@ -200,4 +181,64 @@ class PedidosListFragment : Fragment() {
         txtTotalCantidad.text = "Cant: $totalCantidad"
         txtTotalKilos.text = "Kg: %.1f".format(totalKilos)
     }
+    private fun PDFPedidos() {
+        if (listaPedidos.isEmpty()) {
+            Toast.makeText(requireContext(), "No hay pedidos para exportar", Toast.LENGTH_SHORT).show()
+            return
+        }
+        PDFPedidos.crearPDFEnDescargas(requireContext(), listaPedidos)
+    }
+
+    private fun CSVPedidos() {
+        if (listaPedidos.isEmpty()) {
+            Toast.makeText(requireContext(), "No hay pedidos para exportar", Toast.LENGTH_SHORT).show()
+            return
+        }
+        CSVPedidos.crearCSVEnDescargas(requireContext(), listaPedidos)
+    }
+
+    private fun compartirArchivo(tipo: String) {
+        if (listaPedidos.isEmpty()) {
+            Toast.makeText(requireContext(), "No hay pedidos para compartir", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val cargaNombre = listaCargas.firstOrNull { it.id == idCargaSeleccionada }?.descripcion ?: "carga"
+        val fileName: String
+        val mimeType: String
+        val contenido: ByteArray
+
+        if (tipo == "pdf") {
+            fileName = "Pedidos_$cargaNombre.pdf"
+            mimeType = "application/pdf"
+            contenido = PDFPedidos.generarBytes(requireContext(), listaPedidos)
+        } else {
+            fileName = "Pedidos_$cargaNombre.csv"
+            mimeType = "text/csv"
+            contenido = CSVPedidos.generarBytes(listaPedidos)
+        }
+
+        // Guardar en caché
+        val file = java.io.File(requireContext().cacheDir, fileName)
+        file.writeBytes(contenido)
+
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            requireContext(),
+            "${requireContext().packageName}.fileprovider",
+            file
+        )
+
+        startActivity(
+            android.content.Intent.createChooser(
+                android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                    type = mimeType
+                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                },
+                "Compartir pedidos"
+            )
+        )
+    }
+
+
 }

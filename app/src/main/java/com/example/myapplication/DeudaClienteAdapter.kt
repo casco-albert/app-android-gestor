@@ -9,14 +9,15 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.TextView
+import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.*
-import java.text.DecimalFormat
-import java.util.Locale
+
 class DeudaClienteAdapter(
     context: Context,
     private val lista: List<DeudaCliente>
 ) : ArrayAdapter<DeudaCliente>(context, 0, lista) {
+
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
 
         val view = convertView ?: LayoutInflater.from(context)
@@ -24,80 +25,79 @@ class DeudaClienteAdapter(
 
         val deuda = lista[position]
 
-        val cliente = view.findViewById<TextView>(R.id.deuCliente)
-        val fecha = view.findViewById<TextView>(R.id.deuFecha)
-        val monto = view.findViewById<TextView>(R.id.deuMonto)
-        val saldoAnterior = view.findViewById<TextView>(R.id.deuSaldoAnterior)
-        val pago = view.findViewById<TextView>(R.id.deuPago)
-        val total = view.findViewById<TextView>(R.id.deuTotalDeuda)
+        val tvCliente       = view.findViewById<TextView>(R.id.deuCliente)
+        val tvFecha         = view.findViewById<TextView>(R.id.deuFecha)
+        val tvCantidad      = view.findViewById<TextView>(R.id.deuMonto)
+        val tvSaldoAnterior = view.findViewById<TextView>(R.id.deuSaldoAnterior)
+        val tvPago          = view.findViewById<TextView>(R.id.deuPago)
+        val tvTotal         = view.findViewById<TextView>(R.id.deuTotalDeuda)
 
-        // 🔥 DATOS
-        cliente.text = deuda.cliente
-        fecha.text = formatearFecha(deuda.deuFecha)
-        monto.text = formatearNumero(deuda.monto)
-        saldoAnterior.text = formatearNumero(deuda.saldoAnterior)
-        pago.text = formatearNumero(deuda.montoCobro)
-        total.text = formatearNumero(deuda.totalDeuda)
+        // ── Datos ──────────────────────────────────────────────
+        tvCliente.text       = deuda.cliente
+        tvFecha.text         = formatearFecha(deuda.deuFecha)
+        tvCantidad.text      = deuda.deuCantidad.toString()
+        tvSaldoAnterior.text = formatearNumero(deuda.saldoAnterior)
+        tvPago.text          = formatearNumero(deuda.montoCobro)
+        tvTotal.text         = formatearNumero(deuda.deudaPendiente) // ✅ usa propiedad calculada
 
-        // 🔥 ALINEACIÓN TIPO TABLA (Excel)
-        cliente.gravity = Gravity.START
-        fecha.gravity = Gravity.CENTER
-        monto.gravity = Gravity.END
-        saldoAnterior.gravity = Gravity.END
-        pago.gravity = Gravity.END
-        total.gravity = Gravity.END
+        // ── Alineación tipo tabla ──────────────────────────────
+        tvCliente.gravity       = Gravity.START
+        tvFecha.gravity         = Gravity.CENTER
+        tvCantidad.gravity      = Gravity.END
+        tvSaldoAnterior.gravity = Gravity.END
+        tvPago.gravity          = Gravity.END
+        tvTotal.gravity         = Gravity.END
 
-        // 🔥 FUENTE MONOSPACE (mejor alineación numérica)
-        monto.typeface = Typeface.MONOSPACE
-        saldoAnterior.typeface = Typeface.MONOSPACE
-        pago.typeface = Typeface.MONOSPACE
-        total.typeface = Typeface.MONOSPACE
+        // ── Fuente monospace ───────────────────────────────────
+        tvCantidad.typeface      = Typeface.MONOSPACE
+        tvSaldoAnterior.typeface = Typeface.MONOSPACE
+        tvPago.typeface          = Typeface.MONOSPACE
+        tvTotal.typeface         = Typeface.MONOSPACE
 
-        // 🔥 COLOR (opcional pro)
-        saldoAnterior.setTextColor(Color.parseColor("#D32F2F"))
-        pago.setTextColor(Color.parseColor("#2E7D32"))
+        // ── Colores de texto ───────────────────────────────────
+        tvSaldoAnterior.setTextColor(Color.parseColor("#D32F2F"))
+        tvPago.setTextColor(Color.parseColor("#2E7D32"))
 
-        // 🔥 COLOR DE FONDO SEGÚN SALDO
-        when {
-            deuda.saldoAnterior > 299000 -> {
-                view.setBackgroundColor(Color.parseColor("#FFCDD2")) // rojo suave
+        // ── Color del total según deuda pendiente ──────────────
+        tvTotal.setTextColor(
+            when {
+                deuda.deudaPendiente <= 0    -> Color.parseColor("#2E7D32") // verde — pagado
+                deuda.deudaPendiente > 299000 -> Color.parseColor("#D32F2F") // rojo — deuda alta
+                else                          -> Color.parseColor("#E65100") // naranja — deuda parcial
             }
-            deuda.saldoAnterior == 0.0 -> {
-                view.setBackgroundColor(Color.parseColor("#E8F5E9")) // verde suave
-            }
-            else -> {
-                // efecto zebra (filas intercaladas)
-                if (position % 2 == 0) {
-                    view.setBackgroundColor(Color.parseColor("#FFFFFF"))
-                } else {
-                    view.setBackgroundColor(Color.parseColor("#F5F5F5"))
-                }            }
-        }
+        )
 
+        // ── Color de fondo según deuda pendiente ───────────────
+        view.setBackgroundColor(
+            when {
+                deuda.deudaPendiente <= 0     -> Color.parseColor("#E8F5E9") // verde suave — pagado
+                deuda.deudaPendiente > 299000 -> Color.parseColor("#FFCDD2") // rojo suave — deuda alta
+                else -> if (position % 2 == 0) Color.parseColor("#FFFFFF")
+                else                   Color.parseColor("#F5F5F5")   // zebra
+            }
+        )
 
         return view
     }
+
+    // ── Helpers ────────────────────────────────────────────────
+
     fun formatearNumero(numero: Double): String {
-        val formato = DecimalFormat("#,##0")
-        return formato.format(numero)
+        return DecimalFormat("#,##0").format(numero)
     }
+
     fun formatearFecha(fecha: String): String {
         return try {
-            // 🔹 Si es timestamp (número)
             if (fecha.all { it.isDigit() }) {
                 val timestamp = fecha.toLong()
-                val formato = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                formato.format(Date(timestamp))
+                SimpleDateFormat("dd/MM", Locale.getDefault()).format(Date(timestamp * 1000))
             } else {
-                // 🔹 Si viene como string tipo "2026-03-23"
-                val formatoEntrada = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                val formatoSalida = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-
-                val date = formatoEntrada.parse(fecha)
-                formatoSalida.format(date!!)
+                val entrada = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val salida  = SimpleDateFormat("dd/MM",      Locale.getDefault())
+                salida.format(entrada.parse(fecha)!!)
             }
         } catch (e: Exception) {
-            fecha // si falla, devuelve lo que venga
+            fecha
         }
     }
 }

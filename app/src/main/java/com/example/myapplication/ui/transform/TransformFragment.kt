@@ -1,20 +1,28 @@
 package com.example.myapplication.ui.transform
 
+import android.app.AlertDialog
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.app.AlertDialog
-import android.text.TextWatcher
-import android.text.Editable
 import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.myapplication.*
-import com.example.myapplication.databinding.FragmentTransformBinding
+import com.example.myapplication.ApiResponse
+import com.example.myapplication.Carga
+import com.example.myapplication.Cliente
+import com.example.myapplication.ClienteConPedido
+import com.example.myapplication.Pedido
 import com.example.myapplication.R
+import com.example.myapplication.databinding.FragmentTransformBinding
+import com.example.myapplication.ui.RetrofitClient
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class TransformFragment : Fragment() {
 
@@ -22,9 +30,8 @@ class TransformFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var adapter: ClienteAdapter
-
-    // 🔥 TU MODELO REAL
     private var listaOriginal: List<ClienteConPedido> = listOf()
+    private val api = RetrofitClient.api
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -35,45 +42,94 @@ class TransformFragment : Fragment() {
         _binding = FragmentTransformBinding.inflate(inflater, container, false)
 
         adapter = ClienteAdapter(
+
             onEditar = { cliente ->
                 mostrarDialogEditar(cliente)
             },
+
             onEliminar = { cliente ->
                 AlertDialog.Builder(requireContext())
                     .setTitle("Eliminar Cliente")
-                    .setMessage("¿Eliminar a ${cliente.nombre}?")
+                    .setMessage("¿Eliminar a ${cliente.nom}?")
                     .setPositiveButton("Sí") { dialog, _ ->
-                        val dbHelper = SQLite(requireContext())
-                        dbHelper.eliminarCliente(cliente.id)
-                        cargarClientes()
+                        api.eliminarCliente(cliente.id)
+                            .enqueue(object : Callback<Void> {
+                                override fun onResponse(
+                                    call: Call<Void>,
+                                    response: Response<Void>
+                                ) {
+                                    Toast.makeText(
+                                        requireContext(),
+                                        "Cliente eliminado",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    cargarClientes()
+                                }
+                                override fun onFailure(call: Call<Void>, t: Throwable) {
+                                    Toast.makeText(
+                                        requireContext(),
+                                        "Error: ${t.message}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            })
                         dialog.dismiss()
                     }
                     .setNegativeButton("Cancelar", null)
                     .show()
             },
+
             onClick = { item ->
                 if (item.tienePedido) {
-                    mostrarDialogEditarPedido(
-                        item.cliente.id,
-                        item.cantidadPedidos
-                    )
+                    // Cliente CON pedido → modo edición
+                    val bundle = Bundle().apply {
+                        putInt("cli_id", item.cliente.id)
+                        putBoolean("es_edicion", true)
+                        putInt("pedido_id", item.pedidoId)
+                        putInt("cantidad_actual", item.cantidadActual)
+                    }
+                    findNavController().navigate(R.id.pedidoFragment, bundle)
+
                 } else {
-                    abrirFormularioPedido(item.cliente)
+                    // Cliente SIN pedido → consultar última carga y crear
+                    api.obtenerUltimaCarga().enqueue(object : Callback<ApiResponse<Carga>> {
+                        override fun onResponse(
+                            call: Call<ApiResponse<Carga>>,
+                            response: Response<ApiResponse<Carga>>
+                        ) {
+                            val ultimaCarga = response.body()?.data
+                            if (ultimaCarga == null) {
+                                Toast.makeText(
+                                    requireContext(),
+                                    "No hay carga activa",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                return
+                            }
+                            val bundle = Bundle().apply {
+                                putInt("cli_id", item.cliente.id)
+                                putInt("id_carga", ultimaCarga.id)
+                                putBoolean("es_edicion", false)
+                            }
+                            findNavController().navigate(R.id.pedidoFragment, bundle)
+                        }
+                        override fun onFailure(call: Call<ApiResponse<Carga>>, t: Throwable) {
+                            Toast.makeText(
+                                requireContext(),
+                                "Error al obtener carga: ${t.message}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    })
                 }
             }
         )
 
-        binding.recyclerviewTransform.layoutManager =
-            LinearLayoutManager(requireContext())
-
+        binding.recyclerviewTransform.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerviewTransform.adapter = adapter
 
-        // 🔍 BUSCADOR
         binding.editBuscarCliente.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                filtrar(s.toString())
-            }
-
+            override fun afterTextChanged(s: Editable?) { filtrar(s.toString()) }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
@@ -83,44 +139,83 @@ class TransformFragment : Fragment() {
         return binding.root
     }
 
-    // 🔍 FILTRO CORRECTO
-    private fun filtrar(texto: String) {
-
-        val listaFiltrada = listaOriginal.filter {
-            it.cliente.nombre.contains(texto, ignoreCase = true)
-        }
-
-        adapter.submitList(listaFiltrada)
-    }
-
-    // 🚀 NAVIGATION
-    private fun abrirFormularioPedido(cliente: Cliente) {
-        val bundle = Bundle().apply {
-            putInt("cliente_id", cliente.id)
-            putString("cliente_nombre", cliente.nombre)
-        }
-
-        findNavController().navigate(
-            R.id.btnNuevoPedido,
-            bundle
-        )
-    }
-
-    // 🔥 CARGAR CLIENTES
     private fun cargarClientes() {
+        api.obtenerClientes().enqueue(object : Callback<ApiResponse<List<Cliente>>> {
+            override fun onResponse(
+                call: Call<ApiResponse<List<Cliente>>>,
+                response: Response<ApiResponse<List<Cliente>>>
+            ) {
+                if (!response.isSuccessful) {
+                    Toast.makeText(
+                        requireContext(),
+                        "Error ${response.code()}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    return
+                }
 
-        val dbHelper = SQLite(requireContext())
-        val idCarga = dbHelper.obtenerUltimaCargaId()
+                val clientes = response.body()?.data ?: emptyList()
 
-        val lista = dbHelper.obtenerClientesConPedidos(idCarga)
+                api.getPedidos().enqueue(object : Callback<ApiResponse<List<Pedido>>> {
+                    override fun onResponse(
+                        call: Call<ApiResponse<List<Pedido>>>,
+                        response: Response<ApiResponse<List<Pedido>>>
+                    ) {
+                        val pedidos = response.body()?.data ?: emptyList()
 
-        listaOriginal = lista
-        adapter.submitList(lista)
+                        listaOriginal = clientes.map { cliente ->
+                            val pedido = pedidos.firstOrNull { it.cli_id == cliente.id }
+                            ClienteConPedido(
+                                cliente = cliente,
+                                tienePedido = pedido != null,
+                                cantidadPedidos = pedido?.cantidad ?: 0,
+                                pedidoId = pedido?.id ?: 0,
+                                cantidadActual = pedido?.cantidad ?: 0
+                            )
+                        }
+
+                        adapter.submitList(listaOriginal.toList())
+                    }
+
+                    override fun onFailure(
+                        call: Call<ApiResponse<List<Pedido>>>,
+                        t: Throwable
+                    ) {
+                        // Si falla pedidos, mostrar clientes sin estado
+                        listaOriginal = clientes.map { cliente ->
+                            ClienteConPedido(
+                                cliente = cliente,
+                                tienePedido = false,
+                                cantidadPedidos = 0
+                            )
+                        }
+                        adapter.submitList(listaOriginal.toList())
+                    }
+                })
+            }
+
+            override fun onFailure(
+                call: Call<ApiResponse<List<Cliente>>>,
+                t: Throwable
+            ) {
+                android.util.Log.e("API_CLIENTES", "Error Retrofit", t)
+                Toast.makeText(
+                    requireContext(),
+                    "Error: ${t.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        })
     }
 
-    // ✏️ EDITAR CLIENTE
-    private fun mostrarDialogEditar(cliente: Cliente) {
+    private fun filtrar(texto: String) {
+        val listaFiltrada = listaOriginal.filter {
+            it.cliente.nom.contains(texto, ignoreCase = true)
+        }
+        adapter.submitList(listaFiltrada.toList())
+    }
 
+    private fun mostrarDialogEditar(cliente: Cliente) {
         val dialogView = LayoutInflater.from(requireContext())
             .inflate(R.layout.dialog_editar_cliente, null)
 
@@ -129,54 +224,43 @@ class TransformFragment : Fragment() {
         val inputPrecio = dialogView.findViewById<EditText>(R.id.editPrecio)
 
         inputRec.setText(cliente.rec.toString())
-        inputNombre.setText(cliente.nombre)
-        inputPrecio.setText(cliente.precioKilo.toString())
+        inputNombre.setText(cliente.nom)
+        inputPrecio.setText(cliente.preciokilo.toString())
 
         AlertDialog.Builder(requireContext())
             .setTitle("Editar Cliente")
             .setView(dialogView)
             .setPositiveButton("Guardar") { dialog, _ ->
-
-                val dbHelper = SQLite(requireContext())
-
-                dbHelper.editarCliente(
-                    cliente.id,
-                    inputRec.text.toString().toDoubleOrNull() ?: cliente.rec,
-                    inputNombre.text.toString(),
-                    inputPrecio.text.toString().toDoubleOrNull() ?: cliente.precioKilo
+                val actualizado = Cliente(
+                    id = cliente.id,
+                    rec = inputRec.text.toString().toDoubleOrNull() ?: cliente.rec,
+                    nom = inputNombre.text.toString().ifBlank { cliente.nom },
+                    direc = cliente.direc?.ifBlank { "" } ?: "",
+                    telef = cliente.telef ?: "",
+                    preciokilo = inputPrecio.text.toString().toDoubleOrNull() ?: cliente.preciokilo
                 )
-
-                cargarClientes()
+                api.actualizarCliente(cliente.id, actualizado)
+                    .enqueue(object : Callback<Cliente> {
+                        override fun onResponse(
+                            call: Call<Cliente>,
+                            response: Response<Cliente>
+                        ) {
+                            Toast.makeText(
+                                requireContext(),
+                                "Cliente actualizado",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            cargarClientes()
+                        }
+                        override fun onFailure(call: Call<Cliente>, t: Throwable) {
+                            Toast.makeText(
+                                requireContext(),
+                                "Error: ${t.message}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    })
                 dialog.dismiss()
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
-
-    // 🔄 EDITAR PEDIDO
-    private fun mostrarDialogEditarPedido(clienteId: Int, cantidadActual: Int) {
-
-        val editText = EditText(requireContext())
-        editText.setText(cantidadActual.toString())
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("Editar cantidad pedido")
-            .setView(editText)
-            .setPositiveButton("Actualizar") { _, _ ->
-
-                val nuevaCantidad = editText.text.toString().toIntOrNull() ?: return@setPositiveButton
-
-                val db = SQLite(requireContext())
-                val idCarga = db.obtenerUltimaCargaId()
-
-                db.actualizarCantidadPorCliente(clienteId, idCarga, nuevaCantidad)
-
-                Toast.makeText(requireContext(),
-                    "Pedido actualizado correctamente",
-                    Toast.LENGTH_SHORT
-                ).show()
-
-                cargarClientes()
             }
             .setNegativeButton("Cancelar", null)
             .show()
@@ -184,9 +268,7 @@ class TransformFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        if (::adapter.isInitialized) {
-            cargarClientes()
-        }
+        cargarClientes()
     }
 
     override fun onDestroyView() {

@@ -18,8 +18,8 @@
     <string name="id_cliente">ID Cliente</string>
     <string name="cantidad">Cantidad</string>
 
-    <string name="kilos">Kilos</string>
-    <string name="precio">Precio</string>
+    <string name="kilos">Total Kg</string>
+    <string name="precio">Total Monto</string>
 
     <string name="guardar_pedido">Guardar Pedido</string>
     <string name="btnNuevoPedido">Nuevo Pedido</string>
@@ -30,7 +30,7 @@
 
     //Pantalla Nuevo CARGA
     <string name="guardar_carga">Guardar Carga</string>
-    <string name="fecha">Fecha de CARGA</string>
+    <string name="fecha">Fecha de Carga</string>
     <string name="acantidad">Cantidad Total</string>
     <string name="descripcion">Descripcion de la carga</string>
         //Pantalla Nuevo Cliente
