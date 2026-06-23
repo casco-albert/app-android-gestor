@@ -1,2 +1,3 @@
 
-Aplicacion Android conectada a api-rest laravel, el backen maneja logica de negocio y base de datos. A continuacion dejo la url de la apirest
+Aplicacion Android conectada a api-rest laravel, el backen maneja logica de negocio y base de datos. A continuacion dejo la url de la apirest....
+https://github.com/casco-albert/mandio-api la url del repositorio backend, la bd mysql puedes correr a xampp
